@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050508;
+  --foreground: #e2e8f0;
+  --primary: #a855f7;
+  --primary-glow: rgba(168, 85, 247, 0.4);
+  --primary-dark: #6b21a8;
+  --surface: #0f0f17;
+  --surface-border: #1e1e2e;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-glow: var(--primary-glow);
+  --color-primary-dark: var(--primary-dark);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --font-sans: var(--font-geist-sans), Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --radius-md: var(--radius);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: var(--primary);
+  color: #fff;
+}
