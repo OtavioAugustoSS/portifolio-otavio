@@ -1,6 +1,7 @@
 "use client";
 
 import AiChat from "@/components/AiChat";
+import SkillGlobe from "@/components/SkillGlobe";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 
@@ -64,8 +65,20 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-white/20 mb-10">Sobre Mim</h2>
         </section>
         
-        <section id="skills" className="min-h-screen pt-32 pb-16 px-4 flex flex-col items-center border-t border-white/5">
-          <h2 className="text-3xl font-bold text-white/20 mb-10">Habilidades</h2>
+        <section id="skills" className="min-h-screen py-32 px-4 flex flex-col items-center justify-center border-t border-white/5 relative overflow-hidden">
+          {/* Fundo Nebulosa sutil para o Globo */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+          
+          <div className="text-center mb-8 z-20">
+            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">TECH STACK</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
+              Minhas <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Habilidades</span>
+            </h2>
+          </div>
+          
+          <div className="w-full flex justify-center z-20 mt-10">
+            <SkillGlobe />
+          </div>
         </section>
         
         <section id="projetos" className="min-h-screen pt-32 pb-16 px-4 flex flex-col items-center border-t border-white/5">

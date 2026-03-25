@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Home as HomeIcon } from "lucide-react";
 
 const Github = ({ size = 20, className = "" }) => (
@@ -62,32 +63,32 @@ export default function Navbar() {
       </div>
 
       {/* Center Links (Glassmorphism Pill) */}
-      <div className="hidden md:flex items-center gap-8 px-8 py-3 rounded-full bg-background/40 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <Link 
-          href="#home" 
-          className={`transition-colors drop-shadow-md ${activeSection === 'home' || activeSection === '' ? 'text-primary' : 'text-foreground hover:text-primary'}`}
-          aria-label="Início"
-        >
-          <HomeIcon size={18} />
-        </Link>
-        <Link 
-          href="#sobre-mim" 
-          className={`text-sm font-medium transition-colors drop-shadow-md ${activeSection === 'sobre-mim' ? 'text-primary' : 'text-foreground hover:text-primary'}`}
-        >
-          Sobre Mim
-        </Link>
-        <Link 
-          href="#skills" 
-          className={`text-sm font-medium transition-colors drop-shadow-md ${activeSection === 'skills' ? 'text-primary' : 'text-foreground hover:text-primary'}`}
-        >
-          Habilidades
-        </Link>
-        <Link 
-          href="#projetos" 
-          className={`text-sm font-medium transition-colors drop-shadow-md ${activeSection === 'projetos' ? 'text-primary' : 'text-foreground hover:text-primary'}`}
-        >
-          Projetos
-        </Link>
+      <div className="hidden md:flex items-center px-4 py-2 rounded-full bg-background/40 backdrop-blur-xl border border-white/5 shadow-2xl relative">
+        {[
+          { id: 'home', label: <HomeIcon size={18} />, title: "Início" },
+          { id: 'sobre-mim', label: "Sobre Mim" },
+          { id: 'skills', label: "Habilidades" },
+          { id: 'projetos', label: "Projetos" }
+        ].map((item) => {
+          const isActive = activeSection === item.id || (activeSection === '' && item.id === 'home');
+          return (
+            <Link 
+              key={item.id}
+              href={`#${item.id}`}
+              className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-400 hover:text-white'}`}
+              aria-label={item.title || (typeof item.label === "string" ? item.label : undefined)}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="active-nav-pill"
+                  className="absolute inset-0 bg-[#27272a]/80 shadow-lg border border-white/5 rounded-full -z-10"
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                />
+              )}
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Social Icons */}
