@@ -2,6 +2,7 @@
 
 import AiChat from "@/components/AiChat";
 import SkillGlobe from "@/components/SkillGlobe";
+import SkillList from "@/components/SkillList";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 
@@ -67,7 +68,7 @@ export default function Home() {
         
         <section id="skills" className="min-h-screen py-32 px-4 flex flex-col items-center justify-center border-t border-white/5 relative overflow-hidden">
           {/* Fundo Nebulosa sutil para o Globo */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
           
           <div className="text-center mb-8 z-20">
             <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">TECH STACK</span>
@@ -78,6 +79,10 @@ export default function Home() {
           
           <div className="w-full flex justify-center z-20 mt-10">
             <SkillGlobe />
+          </div>
+
+          <div className="w-full z-20 mt-12 pb-12">
+            <SkillList />
           </div>
         </section>
         
