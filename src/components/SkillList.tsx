@@ -46,7 +46,7 @@ const containerVariants = {
       delayChildren: 0.2
     }
   }
-};
+} as const;
 
 const itemVariants = {
   hidden: { 
@@ -62,7 +62,7 @@ const itemVariants = {
       ease: "easeOut" 
     } 
   }
-};
+} as const;
 
 export default function SkillList() {
   return (
