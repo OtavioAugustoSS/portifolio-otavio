@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "meta/llama-3.1-8b-instruct", // Modelo ultra-rápido de 8b pra respostas instantâneas
+        model: "meta/llama-3.1-70b-instruct", // 70B: muito mais preciso, ainda rápido na NVIDIA NIM
         messages: [
           {
             role: "system",
@@ -30,8 +30,8 @@ export async function POST(request: Request) {
           },
           { role: "user", content: message },
         ],
-        temperature: 0.7,
-        max_tokens: 150, // Limite forçado rígido
+        temperature: 0.3, // Temperatura baixa = respostas mais precisas e factuais
+        max_tokens: 512, // Suficiente para listas completas sem truncar
       }),
     });
 

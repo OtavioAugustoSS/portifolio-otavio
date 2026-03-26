@@ -23,15 +23,15 @@ const cloudProps = {
     imageScale: 2, 
     activeCursor: "default",
     tooltip: "none", 
-    initial: [0.015, -0.015], // Rotação autônoma lente e pacífica
+    initial: [0.10, -0.10], // Auto-rotação contínua e visível (era 0.015 que parava)
     radiusX: 0.8, // Encolhe a órbita em 20% criando padding interno p/ não cortar ícones na borda
     radiusY: 0.8,
     radiusZ: 0.8,
     clickToFront: 500,
     dragControl: true, 
-    decel: 0.95, // FREIO DE INÉRCIA: Faz o globo parar suavemente em vez de girar ad infinitum
-    maxSpeed: 0.008, // 🛑 LIMITADOR DE VELOCIDADE: Impede que o globo zipe em 1000km/h quando arrastado
-    minSpeed: 0.002,
+    decel: 0.99, // Freio muito suave: o globo perde velocidade lentamente após soltar o mouse
+    maxSpeed: 0.003, // Limite baixo para arrastar suavemente sem girar como tornado
+    minSpeed: 0.04, // Mantém a rotação contínua mesmo após parar o arrasto
     outlineColour: "transparent",
     imageMode: "both", 
     imagePosition: "top",
