@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Home as HomeIcon } from "lucide-react";
 
@@ -29,6 +29,14 @@ const Workana = ({ size = 20, className = "" }) => (
 
 export default function Navbar() {
   const [activeSection, setActiveSection] = useState("");
+
+  // Smooth Scroll — O deslize fluido da NavBar (igual ao portfólio de referência)
+  const scrollTo = useCallback((id: string) => {
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,9 +80,9 @@ export default function Navbar() {
         ].map((item) => {
           const isActive = activeSection === item.id || (activeSection === '' && item.id === 'home');
           return (
-            <Link 
+            <button
               key={item.id}
-              href={`#${item.id}`}
+              onClick={() => scrollTo(item.id)}
               className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-400 hover:text-white'}`}
               aria-label={item.title || (typeof item.label === "string" ? item.label : undefined)}
             >
@@ -86,7 +94,7 @@ export default function Navbar() {
                 />
               )}
               {item.label}
-            </Link>
+            </button>
           );
         })}
       </div>
