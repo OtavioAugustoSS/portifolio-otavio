@@ -3,6 +3,7 @@
 import AiChat from "@/components/AiChat";
 import SkillGlobe from "@/components/SkillGlobe";
 import SkillList from "@/components/SkillList";
+import AboutSection from "@/components/AboutSection";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 
@@ -62,8 +63,14 @@ export default function Home() {
 
       {/* Landing Page Content Sections */}
       <div className="relative z-20 bg-black/60 backdrop-blur-xl border-t border-white/5">
-        <section id="sobre-mim" className="min-h-screen pt-32 pb-16 px-4 flex flex-col items-center">
-          <h2 className="text-3xl font-bold text-white/20 mb-10">Sobre Mim</h2>
+        <section id="sobre-mim" className="min-h-screen pt-24 pb-16 px-4 flex flex-col items-center">
+          <div className="text-center mb-10 z-20">
+            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">Quem sou eu</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
+              Sobre <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Mim</span>
+            </h2>
+          </div>
+          <AboutSection />
         </section>
         
         <section id="skills" className="min-h-screen py-32 px-4 flex flex-col items-center justify-center border-t border-white/5 relative overflow-hidden">
