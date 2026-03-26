@@ -24,9 +24,9 @@ const techStack = [
 const PHOTO_MAP: Record<string, string> = {
   default:  "/profile.jpg",         // Foto pessoal do Otavio
   brasilia: "/brasilia-city.webp",  // Foto de Brasília
-  craft:    "/computer.jpg",        // Imagem do computador (imagem_computador.jpg)
+  craft:    "/craft-pc.jpg",        // Imagem do computador (imagem_pc.jpg)
   cards:    "/ucb.jpg",             // Foto da UCB
-  mindset:  "/profile.jpg",         // Placeholder até o usuário decidir
+  about:    "/profile2.jpeg",       // Foto alternativa sobre mim
 };
 
 // ─── Ordem: Workana (esq) | UCB centro | Especialização (dir) ──────────────────────
@@ -95,21 +95,23 @@ export default function AboutSection() {
           </BentoCard>
         </div>
 
-        {/* ── [3] Mindset Card (middle-left) ──────────────────────────────── */}
+        {/* ── [3] Sobre Mim Card (middle-left) ──────────────────────────────── */}
         <BentoCard
-          className="col-span-1 row-span-2 flex flex-col p-6"
-          onMouseEnter={() => setHoveredZone("mindset")}
+          className="col-span-1 row-span-2 flex flex-col p-8"
+          onMouseEnter={() => setHoveredZone("about")}
           onMouseLeave={() => setHoveredZone("default")}
         >
-          <h3 className="text-xl font-black text-white mb-1">Mindset</h3>
-          <div className="h-px w-6 bg-primary mb-4" />
+          <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-sm tracking-[0.2em] font-black text-primary uppercase">Sobre mim</h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-primary/50 to-transparent" />
+          </div>
 
-          {/* Espaço reservado — usuário vai decidir o conteúdo */}
-          <div className="flex-1 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-center px-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary text-xl">✦</span>
-            </div>
-            <p className="text-zinc-500 text-xs">Área reservada — em breve!</p>
+          <div className="flex-1 flex flex-col justify-center">
+            <p className="text-[15px] text-zinc-300 leading-[1.8] font-medium">
+              Me chamo Otavio, nasci em Unaí - MG e há 1 ano e meio me mudei para Brasília para realizar meu objetivo de ser um programador de sucesso.
+              <br /><br />
+              Estou na luta constante para aprimorar minhas habilidades, seja desenvolvendo projetos pessoais ou atuando como freelancer para contatos e plataformas como a Workana.
+            </p>
           </div>
         </BentoCard>
 
@@ -131,7 +133,7 @@ export default function AboutSection() {
                 alt="Otavio Augusto"
                 fill
                 className={`${
-                  hoveredZone === "default" || hoveredZone === "mindset"
+                  hoveredZone === "default" || hoveredZone === "about"
                     ? "object-cover object-top"
                     : "object-cover object-center"
                 }`}
