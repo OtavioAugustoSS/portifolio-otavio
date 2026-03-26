@@ -62,13 +62,8 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 pt-6 px-4 md:px-12 flex items-center justify-between">
-      {/* Brand / Logo */}
-      <div className="flex items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 shadow-[0_0_15px_rgba(139,92,246,0.5)]">
-          <span className="font-bold text-lg text-primary">OA</span>
-        </div>
-        <span className="hidden sm:block font-semibold tracking-wide text-foreground">Otavio Augusto</span>
-      </div>
+      {/* Brand / Logo (Oculto temporariamente) */}
+      <div className="w-[140px]" />
 
       {/* Center Links (Glassmorphism Pill) */}
       <div className="hidden md:flex items-center px-4 py-2 rounded-full bg-background/40 backdrop-blur-xl border border-white/5 shadow-2xl relative">
