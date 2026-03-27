@@ -177,7 +177,7 @@ export default function AboutSection() {
             {/* Mapa P&B do Brasília como fundo */}
             <div className="absolute inset-0">
               <Image
-                src="/brasilia-map.jpg"
+                src="/places/brasilia-map.jpg"
                 alt="Mapa de Brasília"
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
