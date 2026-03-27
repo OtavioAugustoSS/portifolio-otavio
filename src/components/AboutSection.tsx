@@ -117,6 +117,13 @@ export default function AboutSection() {
 
         {/* ── [4] Foto Central (muda ao hover) ────────────────────────────── */}
         <div className="col-span-1 row-span-2 flex flex-col gap-3">
+          {/* Preload oculto de todas as imagens — elimina delay no primeiro hover */}
+          <div className="hidden" aria-hidden="true">
+            {Object.values(PHOTO_MAP).map((src) => (
+              <Image key={src} src={src} alt="" fill sizes="1px" priority className="opacity-0 pointer-events-none" />
+            ))}
+          </div>
+
           {/* Foto principal com transição suave */}
         <BentoCard className="flex-1 overflow-hidden relative min-h-[280px]">
           <AnimatePresence mode="wait">
@@ -132,6 +139,7 @@ export default function AboutSection() {
                 src={PHOTO_MAP[hoveredZone] || PHOTO_MAP.default}
                 alt="Otavio Augusto"
                 fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className={`${
                   hoveredZone === "default" || hoveredZone === "about"
                     ? "object-cover object-top"
@@ -172,6 +180,7 @@ export default function AboutSection() {
                 src="/brasilia-map.jpg"
                 alt="Mapa de Brasília"
                 fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover object-center opacity-40"
               />
               {/* Overlay gradiente para legibilidade do texto */}
