@@ -4,6 +4,7 @@ import AiChat from "@/components/AiChat";
 import SkillGlobe from "@/components/SkillGlobe";
 import SkillList from "@/components/SkillList";
 import AboutSection from "@/components/AboutSection";
+import ProjectsSection from "@/components/ProjectsSection";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 
@@ -20,13 +21,17 @@ export default function Home() {
         >
           <h1 
             className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-2 text-white"
-            style={{ textShadow: "0px 4px 30px rgba(0,0,0,1), 0px 0px 10px rgba(139, 92, 246, 0.8)" }}
+            style={{ textShadow: "0px 2px 20px rgba(0,0,0,0.9)" }}
           >
-            Olá, sou o <motion.span 
-              className="text-transparent bg-clip-text bg-gradient-to-r from-[#c084fc] via-[#8b5cf6] to-[#c084fc]"
-              style={{ backgroundSize: "200% auto" }}
-              animate={{ backgroundPosition: ["200% center", "-200% center"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            Olá, sou o <motion.span
+              className="text-transparent bg-clip-text"
+              style={{
+                backgroundImage: "linear-gradient(90deg, #d966ff 0%, #d966ff 42%, #ffffff 50%, #d966ff 58%, #d966ff 100%)",
+                backgroundSize: "300% auto",
+                WebkitTextStroke: "1px rgba(217, 102, 255, 0.6)",
+              }}
+              animate={{ backgroundPosition: ["200% center", "-100% center"] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             >
               Otavio Augusto
             </motion.span>
@@ -93,8 +98,14 @@ export default function Home() {
           </div>
         </section>
         
-        <section id="projetos" className="min-h-screen pt-32 pb-16 px-4 flex flex-col items-center border-t border-white/5">
-          <h2 className="text-3xl font-bold text-white/20 mb-10">Projetos</h2>
+        <section id="projetos" className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center border-t border-white/5">
+          <div className="text-center mb-12 z-20">
+            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">O que construí</span>
+            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
+              Meus <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Projetos</span>
+            </h2>
+          </div>
+          <ProjectsSection />
         </section>
       </div>
     </>

@@ -22,11 +22,11 @@ const techStack = [
 
 // ─── Mapa de fotos por seção (fotos reais do Otavio) ─────────────────────────
 const PHOTO_MAP: Record<string, string> = {
-  default:  "/profile.jpg",         // Foto pessoal do Otavio
-  brasilia: "/brasilia-city.webp",  // Foto de Brasília
-  craft:    "/craft-pc.jpg",        // Imagem do computador (imagem_pc.jpg)
-  cards:    "/ucb.jpg",             // Foto da UCB
-  about:    "/profile2.jpeg",       // Foto alternativa sobre mim
+  default:  "/profile/profile.jpg",        // Foto pessoal do Otavio
+  brasilia: "/places/brasilia-city.webp",  // Foto de Brasília
+  craft:    "/assets/craft-pc.jpg",        // Setup/PC
+  cards:    "/assets/ucb.jpg",             // Foto da UCB
+  about:    "/profile/profile2.jpeg",      // Foto alternativa sobre mim
 };
 
 // ─── Ordem: Workana (esq) | UCB centro | Especialização (dir) ──────────────────────
