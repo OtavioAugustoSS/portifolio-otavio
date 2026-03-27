@@ -17,14 +17,14 @@ export function BlackHoleBackground() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.5 }}
-      className="fixed top-[-30%] sm:top-[-40%] left-0 w-full z-[-10] flex justify-center pointer-events-none select-none"
+      className="fixed top-[-10%] md:top-[-30%] lg:top-[-40%] left-0 w-full z-[-10] flex justify-center pointer-events-none select-none"
     >
       <video
         autoPlay
         muted
         loop
         playsInline
-        className="w-full h-auto min-w-[800px] object-cover mix-blend-screen"
+        className="w-full h-auto min-w-[150vw] md:min-w-[800px] object-cover mix-blend-screen"
         style={{
           WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 80%)',
           maskImage: 'radial-gradient(circle, black 30%, transparent 80%)'

@@ -40,7 +40,7 @@ export default function Home() {
 
         {/* Ai Chat Component centered in Hero */}
         <motion.div 
-          className="w-full max-w-3xl z-20"
+          className="w-full max-w-3xl z-20 mb-4 md:mb-0"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -50,13 +50,13 @@ export default function Home() {
 
         {/* Scroll Indicator */}
         <motion.div 
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/50 cursor-pointer"
+          className="relative md:absolute md:bottom-8 md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 text-zinc-500 cursor-pointer z-50 mt-6 md:mt-0 w-full md:w-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5, duration: 1 }}
           onClick={() => document.getElementById('sobre-mim')?.scrollIntoView({ behavior: 'smooth' })}
         >
-          <span className="text-xs tracking-widest uppercase font-medium">Scroll para explorar</span>
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-white/60">Scroll para explorar</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}

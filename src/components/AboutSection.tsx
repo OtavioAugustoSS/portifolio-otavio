@@ -63,10 +63,10 @@ export default function AboutSection() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-4">
       {/* Grid Principal — proporções maiores */}
-      <div className="grid grid-cols-3 gap-3" style={{ gridTemplateRows: "180px 1fr" }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:grid-rows-[180px_1fr]">
 
         {/* ── [1] Nome Card — estilo Szostak: nome centralizado, sem label, sem linha ── */}
-        <BentoCard className="col-span-1 row-span-1 flex flex-col items-center justify-center text-center p-6 min-h-[180px] gap-3">
+        <BentoCard className="md:col-span-1 md:row-span-1 flex flex-col items-center justify-center text-center p-6 min-h-[180px] gap-3">
           <h2 className="text-3xl font-black tracking-wider text-white uppercase leading-[1.1]">
             Otavio<br />Augusto
           </h2>
@@ -77,17 +77,17 @@ export default function AboutSection() {
 
         {/* ── [2] Info Card Unificado com 3 paineis (top-right) ─────────────────── */}
         <div
-          className="col-span-2 row-span-1"
+          className="md:col-span-2 md:row-span-1"
           onMouseEnter={() => setHoveredZone("cards")}
           onMouseLeave={() => setHoveredZone("default")}
         >
           <BentoCard className="h-full overflow-hidden min-h-[180px] flex flex-col">
-            {/* Hint Label */}
-            <p className="text-[9px] text-center text-zinc-600 tracking-widest uppercase pt-3 pb-2">
+            {/* Hint Label - Apenas Desktop */}
+            <p className="hidden md:block text-[9px] text-center text-zinc-600 tracking-widest uppercase pt-3 pb-2">
               PASSE O MOUSE PARA LER
             </p>
-            {/* 3 painéis lado a lado — um único card, sem bordas separadas */}
-            <div className="flex flex-1 divide-x divide-white/5 overflow-hidden">
+            {/* 3 painéis lado a lado no desktop e também no mobile (mas com texto miúdo e sem hover) */}
+            <div className="flex flex-row flex-1 divide-x divide-white/5 overflow-hidden">
               {hoverCards.map((card) => (
                 <InfoPanel key={card.id} card={card} />
               ))}
@@ -97,7 +97,7 @@ export default function AboutSection() {
 
         {/* ── [3] Sobre Mim Card (middle-left) ──────────────────────────────── */}
         <BentoCard
-          className="col-span-1 row-span-2 flex flex-col p-8"
+          className="md:col-span-1 md:row-span-2 flex flex-col p-8 order-last md:order-none"
           onMouseEnter={() => setHoveredZone("about")}
           onMouseLeave={() => setHoveredZone("default")}
         >
@@ -116,7 +116,7 @@ export default function AboutSection() {
         </BentoCard>
 
         {/* ── [4] Foto Central (muda ao hover) ────────────────────────────── */}
-        <div className="col-span-1 row-span-2 flex flex-col gap-3">
+        <div className="md:col-span-1 md:row-span-2 flex flex-col gap-3 h-[400px] md:h-auto">
           {/* Preload oculto de todas as imagens — elimina delay no primeiro hover */}
           <div className="hidden" aria-hidden="true">
             {Object.values(PHOTO_MAP).map((src) => (
@@ -211,7 +211,7 @@ export default function AboutSection() {
 
         {/* ── [6] Craft Card (middle-right) ───────────────────────────────── */}
         <BentoCard
-          className="col-span-1 row-span-2 flex flex-col p-6"
+          className="md:col-span-1 md:row-span-2 flex flex-col p-6"
           onMouseEnter={() => setHoveredZone("craft")}
           onMouseLeave={() => setHoveredZone("default")}
         >
@@ -311,37 +311,44 @@ function InfoPanel({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Estado padrão: label roxo + título, centralizado */}
-      <div className="absolute inset-0 p-5 flex flex-col justify-center gap-2">
-        <p className="text-[9px] tracking-[0.25em] uppercase font-semibold text-primary">
+      {/* Vista Mobile: Estático, texto completo mas em fonte menor para caber. Desktop: Centralizado simples */}
+      <div className="md:absolute md:inset-0 p-3 md:p-5 flex flex-col justify-start md:justify-center gap-1 md:gap-2 h-full">
+        <p className="text-[7px] md:text-[9px] tracking-[0.1em] md:tracking-[0.25em] uppercase font-semibold text-primary">
           {card.label}
         </p>
-        <p className={`font-bold leading-snug ${
-          card.isCenter ? "text-white text-lg" : "text-zinc-100 text-base"
+        <p className={`font-bold leading-[1.1] md:leading-snug ${
+          card.isCenter ? "text-white text-[11px] md:text-lg" : "text-zinc-100 text-[10px] md:text-base"
         }`}>
           {card.highlight}
         </p>
+        
+        {/* Descrição embutida apenas no Mobile - letreiro levantado como pedido */}
+        <p className="text-[8px] md:text-[11px] text-zinc-300 md:hidden mt-1 leading-[1.3]">
+          {card.description}
+        </p>
       </div>
 
-      {/* Overlay - só existe no DOM quando hovered (sem artefatos visuais) */}
-      <AnimatePresence>
-        {hovered && (
-          <motion.div
-            className="absolute inset-0 p-5 flex flex-col justify-end bg-[#0d0a18] border-t-2 border-primary/40"
-            initial={{ y: "101%" }}
-            animate={{ y: "0%" }}
-            exit={{ y: "101%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          >
-            <p className="font-bold text-white text-sm mb-2 leading-snug">
-              {card.highlight}
-            </p>
-            <p className="text-[11px] text-zinc-300 leading-relaxed">
-              {card.description}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Overlay Animado - Apenas Desktop */}
+      <div className="hidden md:block">
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              className="absolute inset-0 p-5 flex flex-col justify-end bg-[#0d0a18] border-t-2 border-primary/40"
+              initial={{ y: "101%" }}
+              animate={{ y: "0%" }}
+              exit={{ y: "101%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <p className="font-bold text-white text-sm mb-2 leading-snug">
+                {card.highlight}
+              </p>
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
+                {card.description}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
