@@ -134,7 +134,7 @@ const projects: Project[] = [
       { name: "React",       slug: "react" },
       { name: "TypeScript",  slug: "typescript" },
       { name: "Python",      slug: "python" },
-      { name: "CSS3",        slug: "css3" },
+      { name: "CSS3",        slug: "css" },
     ],
     details: {
       overview:

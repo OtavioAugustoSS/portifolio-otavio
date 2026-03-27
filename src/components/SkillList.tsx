@@ -6,11 +6,13 @@ const skillCategories = [
   {
     title: "Linguagens",
     skills: [
+      { name: "Java", slug: "java", customIcon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" },
       { name: "Python", slug: "python" },
       { name: "JavaScript", slug: "javascript" },
       { name: "TypeScript", slug: "typescript" },
       { name: "PHP", slug: "php" },
       { name: "SQL", slug: "mysql" },
+      { name: "C", slug: "c", customIcon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg" },
     ]
   },
   {
@@ -21,6 +23,7 @@ const skillCategories = [
       { name: "Node.js", slug: "nodedotjs" },
       { name: "Tailwind CSS", slug: "tailwindcss" },
       { name: "Framer Motion", slug: "framer" },
+      { name: "FastAPI", slug: "fastapi" },
     ]
   },
   {
@@ -97,7 +100,7 @@ export default function SkillList() {
                   Isso evita problemas de inversão de cores e simplifica o componente.
                 */}
                 <img 
-                  src={`https://cdn.simpleicons.org/${skill.slug}`} 
+                  src={(skill as any).customIcon || `https://cdn.simpleicons.org/${skill.slug}`} 
                   width={22} 
                   height={22} 
                   alt={skill.name} 
