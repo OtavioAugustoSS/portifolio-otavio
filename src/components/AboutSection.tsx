@@ -22,7 +22,7 @@ const techStack = [
 
 // ─── Mapa de fotos por seção (fotos reais do Otavio) ─────────────────────────
 const PHOTO_MAP: Record<string, string> = {
-  default:  "/profile/profile.jpg",        // Foto pessoal do Otavio
+  default:  "/profile/profile.jpg",        // Foto pessoal
   brasilia: "/places/brasilia-city.webp",  // Foto de Brasília
   craft:    "/assets/craft-pc.jpg",        // Setup/PC
   cards:    "/assets/ucb.jpg",             // Foto da UCB
@@ -45,7 +45,7 @@ const hoverCards = [
     highlight: "UCB — Brasília",
     isCenter: true,
     description:
-      "Cursando Engenharia de Software na Universidade Católica de Brasília, uma das principais instituições do Centro-Oeste. Forte ênfase em sistemas, engenharia de dados e inovação tecnológica.",
+      "Cursando Engenharia de Software na Universidade Católica de Brasília. Com ênfase em sistemas, engenharia de dados e inovação tecnológica.",
   },
   {
     id: "focus",
@@ -53,7 +53,7 @@ const hoverCards = [
     highlight: "Full Stack & Dados",
     isCenter: false,
     description:
-      "Especialização contínua em Desenvolvimento Full Stack e Engenharia de Dados. Objetivo criar soluções de alto impacto que unam desenvolvimento e análise de dados.",
+      "Especialização em Desenvolvimento Full Stack e Engenharia de Dados. Objetivo criar soluções de alto impacto que unam desenvolvimento e análise de dados.",
   },
 ];
 
@@ -108,7 +108,7 @@ export default function AboutSection() {
 
           <div className="flex-1 flex flex-col justify-center">
             <p className="text-[15px] text-zinc-300 leading-[1.8] font-medium">
-              Me chamo Otavio, nasci em Unaí - MG e há 1 ano e meio me mudei para Brasília para realizar meu objetivo de ser um programador de sucesso.
+              Me chamo Otavio, nasci em Unaí - MG e na metade de 2024 me mudei para Brasília para realizar meu objetivo de ser um programador de sucesso.
               <br /><br />
               Estou na luta constante para aprimorar minhas habilidades, seja desenvolvendo projetos pessoais ou atuando como freelancer para contatos e plataformas como a Workana.
             </p>

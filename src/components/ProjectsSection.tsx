@@ -25,9 +25,9 @@ const projects: Project[] = [
   {
     id: "assistente-pessoal",
     title: "Assistente Pessoal IA — WhatsApp",
-    description: "Agente inteligente para WhatsApp com NLP, gerenciamento de agendas e notificações proativas via APScheduler.",
-    image: "/projects/botWhats.png", // ← imagem dos projetos WhatsApp
-    repoUrl: "https://github.com/OtavioAugustoSS/Wpp-Scheduler-Bot", // ← link do repositório
+    description: "Agente inteligente para WhatsApp com NLP, gerenciamento de agendas e notificações via APScheduler.",
+    image: "/projects/botWhats.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/Wpp-Scheduler-Bot", 
     technologies: [
       { name: "Python",     slug: "python" },
       { name: "FastAPI",    slug: "fastapi" },
@@ -36,10 +36,10 @@ const projects: Project[] = [
     ],
     details: {
       overview:
-        "Agente Inteligente para WhatsApp desenvolvido com FastAPI e a API da NVIDIA. Ao invés de um chatbot engessado de 'digite 1 para X', o assistente interpreta intenções em linguagem natural, extrai datas e regras de recorrência (cron format) e salva no banco de dados com injeção de contexto. Deploy automatizado via Docker no Render.",
+        "Agente Inteligente para WhatsApp desenvolvido com FastAPI e a API da NVIDIA. Ao invés de um chatbot padrão, o assistente interpreta intenções em linguagem natural, extrai datas e regras de recorrência e salva no banco de dados com injeção de contexto. Deploy automatizado via Docker no Render.",
       howItWorks: [
         "Usuário envia mensagem em linguagem natural — o agente identifica a intenção",
-        "Extrai datas, horários e regras de recorrência no formato cron",
+        "Extrai datas, horários e regras de recorrência",
         "Salva o agendamento no SQLite via SQLAlchemy com injeção de contexto",
         "APScheduler gerencia os gatilhos de tempo e notifica proativamente via WhatsApp Cloud API",
         "Deploy containerizado com Docker no Render (execução contínua)",
@@ -51,9 +51,9 @@ const projects: Project[] = [
   {
     id: "bot-passagens",
     title: "Bot Monitor de Passagens Aéreas",
-    description: "Bot que monitora e notifica promoções de voos em tempo real para grupos de WhatsApp com regras de negócio inteligentes.",
-    image: "/projects/botWhats.png", // ← imagem dos projetos WhatsApp
-    repoUrl: "https://github.com/OtavioAugustoSS/Bot_WhatsApp_Passagens", // ← link do repositório
+    description: "Bot que monitora e notifica promoções de voos em tempo real para grupos de WhatsApp.",
+    image: "/projects/botWhats.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/Bot_WhatsApp_Passagens", 
     technologies: [
       { name: "Python",   slug: "python" },
       { name: "Selenium", slug: "selenium" },
@@ -61,9 +61,9 @@ const projects: Project[] = [
     ],
     details: {
       overview:
-        "Solução completa de automação que monitora, analisa e notifica promoções de passagens aéreas em tempo real para grupos de WhatsApp. Não apenas busca preços — aplica regras de negócio inteligentes para identificar oportunidades reais de compra com base na antecedência do voo. Filtro de regiões configurável (ex: foco no Centro-Oeste do Brasil).",
+        "Solução de automação que monitora, analisa e notifica promoções de passagens aéreas em tempo real para grupos de WhatsApp. Não apenas busca preços, mas aplica regras de negócio para identificar oportunidades de compra com base na antecedência do voo. O projeto conta com um filtro de regiões configurável para melhor filtragem de promoções por região desejada.",
       howItWorks: [
-        "Web Scraping contínuo de preços de passagens via Selenium",
+        "Web Scraping de preços de passagens via Selenium",
         "Aplica regras de negócio por antecedência: Curto, Médio e Longo prazo",
         "Filtra por região de origem/destino configurável",
         "Envia alertas automáticos com detalhes da promoção para grupos de WhatsApp",
@@ -77,8 +77,8 @@ const projects: Project[] = [
     id: "chatbot-psicologo",
     title: "Chatbot Clínico — Psicólogo",
     description: "Chatbot LGPD-compliant para clínica de psicologia com agendamento via Google Calendar e lembretes automáticos.",
-    image: "/projects/botWhats.png", // ← imagem dos projetos WhatsApp
-    repoUrl: "https://github.com/OtavioAugustoSS/Chatbot-WhatsApp-Psicologo", // ← link do repositório
+    image: "/projects/botWhats.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/Chatbot-WhatsApp-Psicologo",
     technologies: [
       { name: "Python",      slug: "python" },
       { name: "FastAPI",     slug: "fastapi" },
@@ -93,9 +93,9 @@ const projects: Project[] = [
         "Agendamento real: busca vagas no Google Calendar via List Messages do WhatsApp e agenda sem intervenção humana",
         "Sistema Anti-Faltas: detecta consultas vindouras e envia lembretes 24h e 1h antes",
         "Notificações Assíncronas: dispara e-mails para a secretaria a cada nova marcação",
-        "Filtro LGPD: bloqueio nativo do processamento de mídias (fotos/áudios) enviados pelo paciente",
+        "Filtro LGPD: bloqueio nativo do processamento de mídias (fotos/áudios/vídeos) enviados pelo paciente",
       ],
-      techList: ["Python 3.13", "FastAPI (Uvicorn)", "MySQL 8.0", "SQLAlchemy (ORM)", "Meta WhatsApp Cloud API (Webhooks)", "Google Calendar API (Service Accounts)", "SMTP", "APScheduler (Thread-pooling)"],
+      techList: ["Python 3.13", "FastAPI", "MySQL 8.0", "SQLAlchemy", "Meta WhatsApp Cloud API", "Google Calendar API", "SMTP", "APScheduler"],
     },
   },
   // ─────────────────────────────────────────────────────────────────────────
@@ -103,8 +103,8 @@ const projects: Project[] = [
     id: "erp-cloud",
     title: "ERP Cloud — Gestão de Gráfica",
     description: "Sistema ERP moderno para gestão de clientes, pedidos e estoque de uma empresa de comunicação visual.",
-    image: "/projects/erp-dru.png", // ← "/projects/erp.png"
-    repoUrl: "https://github.com/OtavioAugustoSS/ERP-Cloud-DruSign", // ← link do repositório
+    image: "/projects/erp-dru.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/ERP-Cloud-DruSign", 
     technologies: [
       { name: "TypeScript",  slug: "typescript" },
       { name: "MySQL",       slug: "mysql" },
@@ -113,12 +113,11 @@ const projects: Project[] = [
     ],
     details: {
       overview:
-        "ERP Cloud desenvolvido para a Dru Sign, empresa de comunicação visual. Centraliza cadastro de clientes, pedidos, estoque e fluxo financeiro. Inclui ainda um app de geração de fachadas com IA para preview dos clientes.",
+        "ERP Cloud desenvolvido para a Dru Sign, empresa de comunicação visual. Centraliza pedidos, estoque, fluxo financeiro, orçamentos e ordens de serviço.",
       howItWorks: [
-        "Dashboard com visão consolidada de vendas, estoque e finanças",
-        "CRUD completo de clientes, produtos e pedidos",
-        "App de preview de fachadas usando IA de imagens (geração por prompt)",
-        "Exportação de relatórios e integração com banco de dados MySQL",
+        "Gestão avançada de clientes (CRM) e pedidos com pipeline de produção detalhado em etapas.",
+        "Ferramentas específicas para comunicação visual, incluindo precificação por m² e verificação de arquivos.",
+        "Dashboard industrial com métricas em tempo real, sistema de notificações automáticas e chat interno.",
       ],
       techList: ["TypeScript", "JavaScript", "HTML", "MySQL", "CSS"],
     },
@@ -128,8 +127,8 @@ const projects: Project[] = [
     id: "participa-df",
     title: "Participa DF — Ouvidoria GovTech",
     description: "Plataforma PWA de ouvidoria governamental com IA, acessível offline e sem instalação.",
-    image: "/projects/ouvidoria.png", // ← "/projects/participa-df.png"
-    repoUrl: "https://github.com/OtavioAugustoSS/Hackathon_DF_Ouvidoria", // ← link do repositório
+    image: "/projects/ouvidoria.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/Hackathon_DF_Ouvidoria", 
     technologies: [
       { name: "React",       slug: "react" },
       { name: "TypeScript",  slug: "typescript" },
@@ -138,11 +137,11 @@ const projects: Project[] = [
     ],
     details: {
       overview:
-        "Plataforma de ouvidoria governamental construída como PWA (Progressive Web App) para desburocratização das demandas dos cidadãos. Funciona offline e em redes instáveis, sem necessidade de instalação, e usa IA para processar as solicitações.",
+        "Plataforma de ouvidoria governamental construída como PWA para desburocratização das demandas dos cidadãos. Funciona offline e em redes instáveis, sem necessidade de instalação, e usa IA para processar as solicitações.",
       howItWorks: [
         "Funciona como PWA: acessível offline e em redes instáveis sem instalação",
         "Cidadão registra demanda via interface web simples",
-        "IA (Python) processa e categoriza a solicitação automaticamente",
+        "IA processa e categoriza a solicitação automaticamente",
         "Notificação e acompanhamento do status da demanda em tempo real",
       ],
       techList: ["React.js", "TypeScript", "CSS", "Python", "PWA (Service Workers)"],
@@ -153,8 +152,8 @@ const projects: Project[] = [
     id: "raiztech-iot",
     title: "Painel IoT — RaizTech Agronegócio",
     description: "Dashboard para monitoramento de irrigadores inteligentes com dados em tempo real de umidade e temperatura.",
-    image: "/projects/painel-raiztech.jpg", // ← "/projects/raiztech.png"
-    repoUrl: "https://github.com/OtavioAugustoSS/Painel-de-controle-raiztech", // ← link do repositório
+    image: "/projects/painel-raiztech.jpg", 
+    repoUrl: "https://github.com/OtavioAugustoSS/Painel-de-controle-raiztech", 
     technologies: [
       { name: "TypeScript",  slug: "typescript" },
       { name: "JavaScript",  slug: "javascript" },
@@ -178,8 +177,8 @@ const projects: Project[] = [
     id: "portfolio",
     title: "Portfólio Pessoal",
     description: "Este portfólio — Next.js 16, Framer Motion e assistente de IA interativo integrado.",
-    image: "/projects/portfolio-v2.png", // ← "/projects/portfolio.png"
-    repoUrl: "https://github.com/OtavioAugustoSS/portifolio-otavio", // ← link do repositório
+    image: "/projects/portfolio-v2.png", 
+    repoUrl: "https://github.com/OtavioAugustoSS/portifolio-otavio", 
     technologies: [
       { name: "Next.js",       slug: "nextdotjs" },
       { name: "TypeScript",    slug: "typescript" },
@@ -188,9 +187,9 @@ const projects: Project[] = [
     ],
     details: {
       overview:
-        "Portfólio construído do zero com design bento-grid, animações fluidas e um assistente de IA integrado que responde perguntas sobre meu perfil em linguagem natural, usando a API NVIDIA NIM.",
+        "Portfólio construído por mim, com design bento-grid, animações fluidas e um assistente de IA integrado que responde perguntas sobre meu perfil em linguagem natural.",
       howItWorks: [
-        "Layout bento-grid interativo com reveal de fotos ao hover na seção Sobre Mim",
+        "Layout bento-grid interativo com revelação de fotos ao hover em cada seção do Sobre Mim",
         "Globo 3D animado exibindo o tech stack com Three.js / React Three Fiber",
         "Chat IA usando NVIDIA NIM (Llama 3.1) com contexto personalizado do portfólio",
         "Seção de projetos com modal de detalhes e carrossel de tecnologias",
