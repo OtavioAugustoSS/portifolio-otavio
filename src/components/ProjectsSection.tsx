@@ -38,11 +38,11 @@ const projects: Project[] = [
       overview:
         "Agente Inteligente para WhatsApp desenvolvido com FastAPI e a API da NVIDIA. Ao invés de um chatbot padrão, o assistente interpreta intenções em linguagem natural, extrai datas e regras de recorrência e salva no banco de dados com injeção de contexto. Deploy automatizado via Docker no Render.",
       howItWorks: [
-        "Usuário envia mensagem em linguagem natural — o agente identifica a intenção",
+        "Usuário envia mensagem em linguagem natural, o agente identifica a intenção",
         "Extrai datas, horários e regras de recorrência",
         "Salva o agendamento no SQLite via SQLAlchemy com injeção de contexto",
         "APScheduler gerencia os gatilhos de tempo e notifica proativamente via WhatsApp Cloud API",
-        "Deploy containerizado com Docker no Render (execução contínua)",
+        "Deploy containerizado com Docker no Render para execução contínua",
       ],
       techList: ["Python", "FastAPI (Uvicorn)", "NVIDIA NIM API (NLP)", "SQLite", "SQLAlchemy (ORM)", "APScheduler", "Docker", "WhatsApp Cloud API", "Render (Deploy)"],
     },
@@ -368,7 +368,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
       >
         <div
-          className="pointer-events-auto w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0d13] shadow-2xl flex flex-col"
+          className="pointer-events-auto w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0d13] shadow-2xl flex flex-col [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600 transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

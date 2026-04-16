@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send } from "lucide-react";
 
@@ -14,6 +14,20 @@ export default function AiChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
 
   const predefinedActions = [
     { label: "Trabalho", prompt: "Onde você já trabalhou e qual sua experiência profissional?" },
@@ -32,11 +46,19 @@ export default function AiChat() {
     setInputValue("");
     setIsTyping(true);
 
+    // Map existing messages to the format expected by the API
+    const history = messages.map(msg => ({
+      role: msg.type === "ai" ? "assistant" : "user",
+      content: msg.text
+    }));
+    // Append the new message
+    history.push({ role: "user", content: messageText });
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ messages: history }),
       });
 
       const data = await res.json();
@@ -60,7 +82,10 @@ export default function AiChat() {
     <div className="w-full max-w-2xl mx-auto rounded-3xl bg-[#0a0a0c]/80 dark:bg-zinc-950/60 backdrop-blur-3xl border border-white/5 shadow-2xl overflow-hidden flex flex-col h-[500px]">
       
       {/* Messages Area */}
-      <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 scrollbar-thin scrollbar-thumb-zinc-700">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600 transition-colors"
+      >
         
         {messages.length === 0 && (
           <div className="flex items-center justify-center flex-1 h-full opacity-50 select-none pointer-events-none">

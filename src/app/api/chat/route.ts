@@ -3,7 +3,7 @@ import { AI_CONTEXT } from "@/data/ai-context";
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json();
+    const { messages } = await request.json();
 
     const apiKey = process.env.NVIDIA_API_KEY;
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
             role: "system",
             content: AI_CONTEXT,
           },
-          { role: "user", content: message },
+          ...messages,
         ],
         temperature: 0.3, // Temperatura baixa = respostas mais precisas e factuais
         max_tokens: 512, // Suficiente para listas completas sem truncar
