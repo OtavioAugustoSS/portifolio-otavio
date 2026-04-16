@@ -23,7 +23,7 @@ const cloudProps = {
     imageScale: 2, 
     activeCursor: "default",
     tooltip: "none", 
-    initial: [0.10, -0.10], // Auto-rotação contínua e visível (era 0.015 que parava)
+    initial: [0.70, -0.70], // Auto-rotação contínua e visível (era 0.015 que parava)
     radiusX: 0.8, // Encolhe a órbita em 20% criando padding interno p/ não cortar ícones na borda
     radiusY: 0.8,
     radiusZ: 0.8,
