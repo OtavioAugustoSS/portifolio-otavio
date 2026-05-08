@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfólio — Otavio Augusto
 
-## Getting Started
+Meu portfólio pessoal. Construí ele do zero pra mostrar quem eu sou, no que trabalho e os projetos que já desenvolvi como freelancer e estagiário.
 
-First, run the development server:
+## Sobre
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Tem uma página única com hero animado, chat com IA pra responder perguntas sobre mim em linguagem natural, seção bento-grid com bio e localização, globo 3D girando com minhas stacks, lista de habilidades por categoria e cards dos projetos com modal de detalhes.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O design é dark com toques roxo/violeta. Animações fluidas, vídeo de fundo (buraco negro) e transições com spring suaves. Cuidei pra cada seção ter uma identidade visual sem virar exagero.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 16** (App Router) com **TypeScript**
+- **Tailwind CSS 4** pra estilização
+- **Framer Motion** pras animações
+- **CSS 3D Transforms** no globo de skills (sem Three.js — pure CSS perspective + transform)
+- **NVIDIA NIM API** (Llama 3.1 70B) pro chat com IA
+- **Lucide React** pros ícones
+- **Simple Icons CDN** pras logos das tecnologias
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Hospedado na Vercel.

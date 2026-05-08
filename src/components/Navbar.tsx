@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home as HomeIcon, Menu, X } from "lucide-react";
@@ -27,38 +26,33 @@ const Workana = ({ size = 20, className = "" }) => (
   </svg>
 );
 
+const NAV_SECTIONS = ["home", "sobre-mim", "skills", "projetos"] as const;
+
 export default function Navbar() {
   const [activeSection, setActiveSection] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Smooth Scroll — O deslize fluido da NavBar (igual ao portfólio de referência)
   const scrollTo = useCallback((id: string) => {
-    const target = document.getElementById(id);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Find which section is currently in view
-      const sections = ["home", "sobre-mim", "skills", "projetos"];
-      let current = "";
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          // If the section top is above 300px from viewport top, it's considered active
-          if (rect.top <= 300 && rect.bottom >= 300) {
-            current = section;
-          }
-        }
-      }
-      setActiveSection(current);
-    };
+    const observers: IntersectionObserver[] = [];
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    NAV_SECTIONS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActiveSection(id);
+        },
+        { rootMargin: "-40% 0px -55% 0px", threshold: 0 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach((o) => o.disconnect());
   }, []);
 
   return (
@@ -79,11 +73,12 @@ export default function Navbar() {
             <button
               key={item.id}
               onClick={() => scrollTo(item.id)}
-              className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-200 hover:text-white'}`}
               aria-label={item.title || (typeof item.label === "string" ? item.label : undefined)}
+              aria-current={isActive ? "page" : undefined}
+              className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-200 hover:text-white'}`}
             >
               {isActive && (
-                <motion.div 
+                <motion.div
                   layoutId="active-nav-pill"
                   className="absolute inset-0 bg-[#27272a]/80 shadow-lg border border-white/5 rounded-full -z-10"
                   transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
@@ -105,18 +100,19 @@ export default function Navbar() {
             <Linkedin size={20} />
           </a>
           <a href="https://www.workana.com/freelancer/871e75f307471c5252415edeeaf33a08" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all" aria-label="Workana">
-            <Workana size={20} /> 
+            <Workana size={20} />
           </a>
         </div>
       </div>
 
       {/* === MOBILE HEADER BUTTON === */}
       <div className="md:hidden flex w-full justify-between items-center relative z-50">
-         <div className="w-8" /> {/* Placeholder */}
-         <button 
+         <div className="w-8" />
+         <button
            onClick={() => setIsMobileMenuOpen(true)}
-           className="p-3 text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-xl bg-black/40 border border-white/10"
            aria-label="Abrir Menu"
+           aria-expanded={isMobileMenuOpen}
+           className="p-3 text-white hover:bg-white/10 rounded-full transition-colors backdrop-blur-xl bg-black/40 border border-white/10"
          >
            <Menu size={24} />
          </button>
@@ -131,17 +127,18 @@ export default function Navbar() {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#07070a]/90 backdrop-blur-2xl px-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navegação"
           >
-            {/* Close Button no centro superior */}
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-10 p-4 text-white hover:text-primary hover:bg-primary/10 border border-white/10 bg-white/5 rounded-full transition-all"
               aria-label="Fechar Menu"
+              className="absolute top-10 p-4 text-white hover:text-primary hover:bg-primary/10 border border-white/10 bg-white/5 rounded-full transition-all"
             >
               <X size={26} />
             </button>
 
-            {/* Links container */}
             <div className="flex flex-col items-center gap-4 w-full max-w-[280px]">
               {[
                 { id: 'home', label: "Início" },
@@ -164,13 +161,13 @@ export default function Navbar() {
 
             {/* Social Icons Mobile */}
             <div className="flex items-center justify-center gap-6 mt-12 w-full">
-               <a href="https://github.com/OtavioAugustoSS" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all">
+               <a href="https://github.com/OtavioAugustoSS" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all" aria-label="GitHub">
                  <Github size={24} />
                </a>
-               <a href="https://www.linkedin.com/in/otavio-augusto-980258367" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all">
+               <a href="https://www.linkedin.com/in/otavio-augusto-980258367" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all" aria-label="LinkedIn">
                  <Linkedin size={24} />
                </a>
-               <a href="https://www.workana.com/freelancer/871e75f307471c5252415edeeaf33a08" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all">
+               <a href="https://www.workana.com/freelancer/871e75f307471c5252415edeeaf33a08" target="_blank" rel="noopener noreferrer" className="p-3 text-white/50 hover:text-white border border-white/5 rounded-full hover:bg-white/5 transition-all" aria-label="Workana">
                  <Workana size={24} />
                </a>
             </div>

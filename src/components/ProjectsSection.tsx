@@ -100,6 +100,32 @@ const projects: Project[] = [
   },
   // ─────────────────────────────────────────────────────────────────────────
   {
+    id: "chatbot-barbearia",
+    title: "Chatbot Recepcionista — Barbearias",
+    description: "Recepcionista digital com IA via NVIDIA Llama 3.1 70B para WhatsApp, adaptável para qualquer barbearia.",
+    image: "/projects/botWhats.png",
+    repoUrl: "https://github.com/OtavioAugustoSS/chatbot-barbearia",
+    technologies: [
+      { name: "Python",   slug: "python" },
+      { name: "FastAPI",  slug: "fastapi" },
+      { name: "MySQL",    slug: "mysql" },
+      { name: "NVIDIA",   slug: "nvidia" },
+    ],
+    details: {
+      overview:
+        "Recepcionista digital com IA integrada ao WhatsApp para barbearias. Usa NVIDIA Llama 3.1 70B para entender linguagem natural e MySQL como base de conhecimento, garantindo respostas precisas sobre preços, horários e barbeiros sem alucinação. Arquitetura modular pensada para ser adaptada a qualquer barbearia, trocando apenas a base de dados.",
+      howItWorks: [
+        "Cliente envia mensagem no WhatsApp; bot interpreta a intenção via NVIDIA Llama 3.1 70B",
+        "Para informações operacionais (preços, horários, barbeiros), consulta MySQL antes de responder, eliminando alucinação da IA",
+        "Pedidos de agendamento são roteados para sistema externo de booking (ex: AppBarber)",
+        "Suporte a handoff humano: estado da conversa é gerenciado em banco para desativar o bot quando atendente assume",
+        "Sistema de comandos administrativos para gerenciar e resetar estados durante operação",
+      ],
+      techList: ["Python", "FastAPI", "MySQL", "NVIDIA Llama 3.1 70B API", "Meta WhatsApp Cloud API"],
+    },
+  },
+  // ─────────────────────────────────────────────────────────────────────────
+  {
     id: "erp-cloud",
     title: "ERP Cloud — Gestão de Gráfica",
     description: "Sistema ERP moderno para gestão de clientes, pedidos e estoque de uma empresa de comunicação visual.",

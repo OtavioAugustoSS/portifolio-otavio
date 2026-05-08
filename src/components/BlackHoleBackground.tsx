@@ -13,7 +13,7 @@ export function BlackHoleBackground() {
   if (!mounted) return null;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.5 }}
@@ -31,6 +31,7 @@ export function BlackHoleBackground() {
         }}
       >
         <source src="/blackhole.webm" type="video/webm" />
+        <source src="/blackhole.mp4" type="video/mp4" />
       </video>
     </motion.div>
   );

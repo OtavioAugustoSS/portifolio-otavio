@@ -1,12 +1,36 @@
 import { NextResponse } from "next/server";
 import { AI_CONTEXT } from "@/data/ai-context";
 
+const MAX_MESSAGES = 20;
+const MAX_CONTENT_LENGTH = 2000;
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+function isValidMessages(val: unknown): val is ChatMessage[] {
+  if (!Array.isArray(val) || val.length > MAX_MESSAGES) return false;
+  return val.every(
+    (m) =>
+      typeof m === "object" &&
+      m !== null &&
+      (m.role === "user" || m.role === "assistant") &&
+      typeof m.content === "string" &&
+      m.content.length <= MAX_CONTENT_LENGTH
+  );
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages } = await request.json();
+    const body = await request.json();
+    const { messages } = body;
+
+    if (!isValidMessages(messages)) {
+      return NextResponse.json(
+        { error: "Payload inválido." },
+        { status: 400 }
+      );
+    }
 
     const apiKey = process.env.NVIDIA_API_KEY;
-
     if (!apiKey) {
       return NextResponse.json(
         { error: "A chave API da Nvidia não foi configurada no servidor (.env.local)." },
@@ -14,37 +38,50 @@ export async function POST(request: Request) {
       );
     }
 
-    // Faz o fetch para o endpoint OpenAI-compatible da Nvidia NIM (Usando Llama 3.1 70b)
     const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
+      signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
-        model: "meta/llama-3.1-70b-instruct", // 70B: muito mais preciso, ainda rápido na NVIDIA NIM
+        model: "meta/llama-3.1-70b-instruct",
         messages: [
-          {
-            role: "system",
-            content: AI_CONTEXT,
-          },
+          { role: "system", content: AI_CONTEXT },
           ...messages,
         ],
-        temperature: 0.3, // Temperatura baixa = respostas mais precisas e factuais
-        max_tokens: 512, // Suficiente para listas completas sem truncar
+        temperature: 0.3,
+        max_tokens: 512,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`NVIDIA API Error: ${errorText}`);
+      return NextResponse.json(
+        { error: `Erro na API NVIDIA (${response.status}): ${errorText}` },
+        { status: response.status >= 500 ? 502 : response.status }
+      );
     }
 
     const data = await response.json();
-    return NextResponse.json({ reply: data.choices[0].message.content });
-    
-  } catch (error: any) {
-    console.error("Chat API Error:", error.message);
-    return NextResponse.json({ error: "Falha ao se comunicar com a IA." }, { status: 500 });
+    const reply = data?.choices?.[0]?.message?.content;
+
+    if (typeof reply !== "string") {
+      return NextResponse.json(
+        { error: "Resposta inesperada da API." },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ reply });
+
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Chat API Error:", message);
+    return NextResponse.json(
+      { error: "Falha ao se comunicar com a IA." },
+      { status: 500 }
+    );
   }
 }
