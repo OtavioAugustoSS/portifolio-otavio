@@ -75,7 +75,7 @@ export default function Navbar() {
               onClick={() => scrollTo(item.id)}
               aria-label={item.title || (typeof item.label === "string" ? item.label : undefined)}
               aria-current={isActive ? "page" : undefined}
-              className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-200 hover:text-white'}`}
+              className={`relative px-5 py-2 text-sm font-medium transition-all z-10 flex flex-col items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${isActive ? 'text-white drop-shadow-md' : 'text-zinc-200 hover:text-white'}`}
             >
               {isActive && (
                 <motion.div
@@ -93,13 +93,13 @@ export default function Navbar() {
       {/* Social Icons Desktop */}
       <div className="hidden md:flex items-center gap-4">
         <div className="flex items-center gap-3 mr-2">
-          <a href="https://github.com/OtavioAugustoSS" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all" aria-label="GitHub">
+          <a href="https://github.com/OtavioAugustoSS" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="GitHub">
             <Github size={20} />
           </a>
-          <a href="https://www.linkedin.com/in/otavio-augusto-980258367" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all" aria-label="LinkedIn">
+          <a href="https://www.linkedin.com/in/otavio-augusto-980258367" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="LinkedIn">
             <Linkedin size={20} />
           </a>
-          <a href="https://www.workana.com/freelancer/871e75f307471c5252415edeeaf33a08" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all" aria-label="Workana">
+          <a href="https://www.workana.com/freelancer/871e75f307471c5252415edeeaf33a08" target="_blank" rel="noopener noreferrer" className="p-2 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="Workana">
             <Workana size={20} />
           </a>
         </div>

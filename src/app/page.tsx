@@ -1,8 +1,7 @@
 "use client";
 
 import AiChat from "@/components/AiChat";
-import SkillGlobe from "@/components/SkillGlobe";
-import SkillList from "@/components/SkillList";
+import SkillsShowcase from "@/components/SkillsShowcase";
 import AboutSection from "@/components/AboutSection";
 import ProjectsSection from "@/components/ProjectsSection";
 import { motion } from "framer-motion";
@@ -70,40 +69,28 @@ export default function Home() {
       <div className="relative z-20 bg-black/60 backdrop-blur-xl border-t border-white/5">
         <section id="sobre-mim" className="min-h-screen pt-24 pb-16 px-4 flex flex-col items-center">
           <div className="text-center mb-10 z-20">
-            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">Quem sou eu</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
-              Sobre <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Mim</span>
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-white">Sobre Mim</h2>
+            <div className="h-px w-12 bg-primary/70 mx-auto mt-4" />
           </div>
           <AboutSection />
         </section>
         
-        <section id="skills" className="min-h-screen py-32 px-4 flex flex-col items-center justify-center border-t border-white/5 relative overflow-hidden">
+        <section id="skills" className="py-24 px-4 flex flex-col items-center border-t border-white/5 relative overflow-hidden">
           {/* Fundo Nebulosa sutil para o Globo */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-          
+
           <div className="text-center mb-8 z-20">
-            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">TECH STACK</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
-              Minhas <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Habilidades</span>
-            </h2>
-          </div>
-          
-          <div className="w-full flex justify-center z-20 mt-10">
-            <SkillGlobe />
+            <h2 className="text-4xl md:text-5xl font-bold text-white">Minhas Habilidades</h2>
+            <div className="h-px w-12 bg-primary/70 mx-auto mt-4" />
           </div>
 
-          <div className="w-full z-20 mt-12 pb-12">
-            <SkillList />
-          </div>
+          <SkillsShowcase />
         </section>
         
-        <section id="projetos" className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center border-t border-white/5">
+        <section id="projetos" className="min-h-screen pt-24 pb-24 px-4 flex flex-col items-center border-t border-white/5">
           <div className="text-center mb-12 z-20">
-            <span className="text-primary tracking-[0.2em] text-xs font-bold uppercase">O que construí</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-2 text-white">
-              Meus <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Projetos</span>
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-white">Meus Projetos</h2>
+            <div className="h-px w-12 bg-primary/70 mx-auto mt-4" />
           </div>
           <ProjectsSection />
         </section>

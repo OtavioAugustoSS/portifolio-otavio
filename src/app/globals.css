@@ -37,3 +37,12 @@ body {
   background-color: var(--primary);
   color: #fff;
 }
+
+/* Esconde a scrollbar mantendo o scroll (chips do chat etc.) */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

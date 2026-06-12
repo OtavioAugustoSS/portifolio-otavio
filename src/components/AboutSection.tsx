@@ -1,331 +1,347 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import { PROFILE, type PhotoKey, type TimelineItem } from "@/data/profile";
+import { dispatchSiteAction } from "@/lib/site-actions";
 
-const techStack = [
-  { name: "PHP", slug: "php" },
-  { name: "Next.js", slug: "nextdotjs" },
-  { name: "React", slug: "react" },
-  { name: "TypeScript", slug: "typescript" },
-  { name: "Python", slug: "python" },
-  { name: "Node.js", slug: "nodedotjs" },
-  { name: "MySQL", slug: "mysql" },
-  { name: "PostgreSQL", slug: "postgresql" },
-  { name: "Selenium", slug: "selenium" },
-  { name: "Docker", slug: "docker" },
-  { name: "Git", slug: "git" },
-  { name: "WordPress", slug: "wordpress" },
-  { name: "Tailwind", slug: "tailwindcss" },
-];
-
-const PHOTO_MAP: Record<string, string> = {
-  default:  "/profile/profile.jpg",
+// ─── Fotos do quadro central (legendas em PROFILE.photoCaptions) ─────────────
+const PHOTO_MAP: Record<PhotoKey, string> = {
+  default: "/profile/profile2.jpeg",
   brasilia: "/places/brasilia-city.webp",
-  craft:    "/assets/craft-pc.jpg",
-  cards:    "/assets/ucb.jpg",
-  about:    "/profile/profile2.jpeg",
+  ucb: "/assets/ucb.jpg",
+  craft: "/assets/craft-pc.jpg",
 };
 
-const hoverCards = [
+// ─── "O que eu construo" — cada linha abre o projeto correspondente ──────────
+const BUILDS: { title: string; detail: string; projectId: string }[] = [
   {
-    id: "estagio",
-    label: "ESTÁGIO ATUAL",
-    highlight: "Protesto24H",
-    isCenter: false,
-    description:
-      "Estagiário de Desenvolvimento de Software na Protesto24H, atuando com PHP em framework proprietário, pesquisa tecnológica e suporte ao desenvolvimento de novas soluções internas.",
+    title: "Bots de WhatsApp com IA",
+    detail: "Atendentes virtuais que conversam com clientes reais, sem alucinar.",
+    projectId: "chatbot-barbearia",
   },
   {
-    id: "ucb",
-    label: "UNIVERSIDADE",
-    highlight: "UCB — Brasília",
-    isCenter: true,
-    description:
-      "Cursando Engenharia de Software na Universidade Católica de Brasília. Com ênfase em sistemas, engenharia de dados e inovação tecnológica.",
+    title: "ERPs e dashboards",
+    detail: "Gestão, orçamento e precificação para operações de verdade.",
+    projectId: "erp-cloud",
   },
   {
-    id: "workana",
-    label: "FREELANCER",
-    highlight: "Plataforma Workana",
-    isCenter: false,
-    description:
-      "Atua ativamente como freelancer na Workana, desenvolvendo sistemas, automações, bots de WhatsApp e aplicações web de alta performance para clientes.",
+    title: "Tempo real na web",
+    detail: "Canvas colaborativo multiplayer, estilo r/place.",
+    projectId: "pixelplace",
   },
 ];
 
 export default function AboutSection() {
-  const [hoveredZone, setHoveredZone] = useState<string>("default");
+  const [activePhoto, setActivePhoto] = useState<PhotoKey>("default");
+  const resetPhoto = () => setActivePhoto("default");
+
+  // Pré-carrega as fotos secundárias — sem flash no primeiro hover
+  useEffect(() => {
+    (Object.keys(PHOTO_MAP) as PhotoKey[]).forEach((key) => {
+      if (key === "default") return;
+      const img = new window.Image();
+      img.src = PHOTO_MAP[key];
+    });
+  }, []);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:grid-rows-[180px_1fr]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-x-10 lg:gap-y-14">
 
-        {/* ── [1] Nome Card ── */}
-        <BentoCard className="md:col-span-1 md:row-span-1 flex flex-col items-center justify-center text-center p-6 min-h-[180px] gap-3">
-          <h2 className="text-3xl font-black tracking-wider text-white uppercase leading-[1.1]">
-            Otavio<br />Augusto
-          </h2>
-          <p className="text-[10px] text-zinc-400 tracking-[0.35em] uppercase">
-            Full Stack Developer
-          </p>
-        </BentoCard>
-
-        {/* ── [2] Info Card Unificado ── */}
-        <div
-          className="md:col-span-2 md:row-span-1"
-          onMouseEnter={() => setHoveredZone("cards")}
-          onMouseLeave={() => setHoveredZone("default")}
+        {/* ── Lead — manifesto tipográfico, sem card ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="lg:col-span-7 max-lg:order-1 flex flex-col justify-center gap-7"
         >
-          <BentoCard className="h-full overflow-hidden min-h-[180px] flex flex-col">
-            <p className="hidden md:block text-[9px] text-center text-zinc-600 tracking-widest uppercase pt-3 pb-2">
-              PASSE O MOUSE PARA LER
-            </p>
-            <div className="flex flex-row flex-1 divide-x divide-white/5 overflow-hidden">
-              {hoverCards.map((card) => (
-                <InfoPanel key={card.id} card={card} />
-              ))}
-            </div>
-          </BentoCard>
-        </div>
-
-        {/* ── [3] Sobre Mim Card ── */}
-        <BentoCard
-          className="md:col-span-1 md:row-span-2 flex flex-col p-8 order-last md:order-none"
-          onMouseEnter={() => setHoveredZone("about")}
-          onMouseLeave={() => setHoveredZone("default")}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-sm tracking-[0.2em] font-black text-primary uppercase">Sobre mim</h3>
-            <div className="flex-1 h-px bg-gradient-to-r from-primary/50 to-transparent" />
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center">
-            <p className="text-[15px] text-zinc-300 leading-[1.8] font-medium">
-              Me chamo Otavio, nasci em Unaí - MG e na metade de 2024 me mudei para Brasília para realizar meu objetivo de ser um programador de sucesso.
-              <br /><br />
-              Atualmente atuo como Desenvolvedor de Software estagiando na Protesto24H, onde trabalho com PHP, e sigo ativo como freelancer na Workana, sempre em busca de novos desafios para aprimorar minhas habilidades.
-            </p>
-          </div>
-        </BentoCard>
-
-        {/* ── [4] Foto Central ── */}
-        <div className="md:col-span-1 md:row-span-2 flex flex-col gap-3 h-[400px] md:h-auto">
-          <BentoCard className="flex-1 overflow-hidden relative min-h-[280px]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={hoveredZone}
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-                className="absolute inset-0"
-              >
-                {/* Placeholder visível por baixo, sempre */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d0d12] gap-3">
-                  <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                    <span className="text-2xl font-black text-primary">OA</span>
-                  </div>
-                </div>
-
-                <Image
-                  src={PHOTO_MAP[hoveredZone] ?? PHOTO_MAP.default}
-                  alt="Otavio Augusto"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className={`relative z-10 ${
-                    hoveredZone === "default" || hoveredZone === "about"
-                      ? "object-cover object-top"
-                      : "object-cover object-center"
-                  }`}
-                  priority
-                />
-                {hoveredZone !== "craft" && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </BentoCard>
-
-          {/* ── [5] Localização card ── */}
-          <BentoCard
-            className="relative overflow-hidden cursor-default h-[160px]"
-            onMouseEnter={() => setHoveredZone("brasilia")}
-            onMouseLeave={() => setHoveredZone("default")}
-          >
-            <div className="absolute inset-0">
-              <Image
-                src="/places/brasilia-map.jpg"
-                alt="Mapa de Brasília"
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover object-center opacity-40"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/20" />
-            </div>
-
-            <motion.div
-              className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-primary to-transparent opacity-90 pointer-events-none"
-              animate={{ left: ["10%", "90%", "10%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            />
-
-            <div className="absolute bottom-0 left-0 p-4 z-10">
-              <h3 className="text-3xl font-black text-white tracking-tight uppercase leading-none">
-                Brasília, DF
-              </h3>
-              <p className="text-xs text-zinc-400 mt-1 tracking-wide">
-                15.7942° S, 47.8822° O
-              </p>
-              <p className="text-xs text-primary tracking-wide font-medium">
-                - GMT-3
-              </p>
-            </div>
-          </BentoCard>
-        </div>
-
-        {/* ── [6] Craft Card ── */}
-        <BentoCard
-          className="md:col-span-1 md:row-span-2 flex flex-col p-6"
-          onMouseEnter={() => setHoveredZone("craft")}
-          onMouseLeave={() => setHoveredZone("default")}
-        >
-          <h3 className="text-xl font-black text-white mb-1">Expertise</h3>
-          <div className="h-px w-6 bg-primary mb-4" />
-
-          <p className="text-sm text-zinc-300 leading-relaxed">
-            <span className="text-white font-semibold">Construindo sistemas que resolvem problemas reais.</span>{" "}
-            De ERPs Cloud e automações RPA até bots inteligentes e Web Apps de alta performance.
-          </p>
-
-          <p className="text-sm text-zinc-400 mt-3 leading-relaxed">
-            Entendo o que a tecnologia moderna pode oferecer e trabalho para traduzir isso em soluções que o negócio realmente precisa.
-          </p>
-
-          {/* Carrossel de Tech Stack */}
-          <div className="mt-4 overflow-hidden relative">
-            <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#0d0d12] to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0d0d12] to-transparent z-10 pointer-events-none" />
-            <motion.div
-              className="flex gap-2"
-              animate={{ x: ["0%", "-300%"] }}
-              transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          {PROFILE.bio.map((paragraph) => (
+            <p
+              key={paragraph.slice(0, 24)}
+              className="text-2xl md:text-3xl xl:text-4xl font-medium tracking-tight leading-[1.3] text-zinc-400 text-pretty"
             >
-              {[...techStack, ...techStack].map((tech, i) => (
-                <div
-                  key={`${tech.slug}-${i}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 shrink-0"
-                >
-                  <Image
-                    src={`https://cdn.simpleicons.org/${tech.slug}`}
-                    width={14}
-                    height={14}
-                    alt={tech.name}
-                    unoptimized
-                  />
-                  <span className="text-[11px] text-zinc-300 whitespace-nowrap">{tech.name}</span>
-                </div>
-              ))}
-            </motion.div>
-          </div>
+              {renderHighlighted(paragraph, PROFILE.bioHighlights)}
+            </p>
+          ))}
+        </motion.div>
 
-          <p className="text-sm text-zinc-400 mt-4 leading-relaxed">
-            Estagiário de Desenvolvimento de Software na Protesto24H e freelancer ativo na Workana, unindo rigor técnico à inovação empresarial.
-          </p>
+        {/* ── Coluna direita: foto + mapa (dissolve no mobile via contents) ── */}
+        <div className="max-lg:contents lg:col-span-5 lg:row-span-2 lg:flex lg:flex-col lg:gap-5">
+          <PhotoBlock photoKey={activePhoto} className="max-lg:order-2" />
+          <LocationBlock
+            className="max-lg:order-5"
+            onEnter={() => setActivePhoto("brasilia")}
+            onLeave={resetPhoto}
+          />
+        </div>
 
-          <div className="flex items-center gap-1.5 mt-4">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-[11px] text-green-400">Aberto a colaborações</span>
-          </div>
-        </BentoCard>
+        {/* ── Trajetória — timeline com tudo visível ── */}
+        <TimelineBlock
+          className="lg:col-span-4 max-lg:order-3"
+          items={PROFILE.timeline}
+          onHoverItem={(key) => key && setActivePhoto(key)}
+          onLeave={resetPhoto}
+        />
 
+        {/* ── O que eu construo — único card tintado ── */}
+        <BuildsBlock className="lg:col-span-3 lg:self-start max-lg:order-4" />
       </div>
     </div>
   );
 }
 
-// ─── Componentes Helper ──────────────────────────────────────────────────────
+// ─── Destaque de frases da bio (data-driven, sem gradiente) ──────────────────
 
-function BentoCard({
-  children,
+function renderHighlighted(
+  text: string,
+  highlights: { phrase: string; tone: "white" | "primary" }[]
+) {
+  const escaped = highlights.map((h) =>
+    h.phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  const parts = text.split(new RegExp(`(${escaped.join("|")})`, "g"));
+  return parts.map((part, i) => {
+    const hit = highlights.find((h) => h.phrase === part);
+    if (!hit) return <span key={i}>{part}</span>;
+    return (
+      <span
+        key={i}
+        className={
+          hit.tone === "primary"
+            ? "text-primary font-semibold"
+            : "text-white font-semibold"
+        }
+      >
+        {part}
+      </span>
+    );
+  });
+}
+
+// ─── Foto central — moldura de corner-ticks + legenda dinâmica ───────────────
+
+function PhotoBlock({ photoKey, className = "" }: { photoKey: PhotoKey; className?: string }) {
+  const src = PHOTO_MAP[photoKey];
+  const caption = PROFILE.photoCaptions[photoKey];
+
+  return (
+    <div className={`flex flex-col lg:flex-1 ${className}`}>
+      {/* Moldura: ticks ficam fora do overflow-hidden */}
+      <div className="relative flex-1">
+        <span aria-hidden className="absolute -top-1.5 -left-1.5 h-4 w-4 border-t-2 border-l-2 border-primary/60 z-10" />
+        <span aria-hidden className="absolute -top-1.5 -right-1.5 h-4 w-4 border-t-2 border-r-2 border-primary/60 z-10" />
+        <span aria-hidden className="absolute -bottom-1.5 -left-1.5 h-4 w-4 border-b-2 border-l-2 border-primary/60 z-10" />
+        <span aria-hidden className="absolute -bottom-1.5 -right-1.5 h-4 w-4 border-b-2 border-r-2 border-primary/60 z-10" />
+
+        <div className="relative h-full min-h-[320px] lg:min-h-[440px] max-lg:aspect-[4/5] max-lg:h-auto overflow-hidden rounded-sm bg-[#0b0b10]">
+          {/* Placeholder por baixo, sempre */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <span className="text-2xl font-black text-primary">OA</span>
+            </div>
+          </div>
+
+          {/* Crossfade sync, keyed pelo src (marcos que compartilham foto não piscam) */}
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={src}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={src}
+                alt={caption}
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className={`object-cover ${photoKey === "default" ? "object-top" : "object-center"}`}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Legenda dinâmica */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.p
+          key={photoKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="mt-3 font-mono text-[11px] text-zinc-500"
+        >
+          {caption}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Trajetória — timeline vertical, conteúdo todo visível ───────────────────
+
+function TimelineBlock({
+  items,
+  onHoverItem,
+  onLeave,
   className = "",
-  onMouseEnter,
-  onMouseLeave,
 }: {
-  children: React.ReactNode;
+  items: TimelineItem[];
+  onHoverItem: (key?: PhotoKey) => void;
+  onLeave: () => void;
   className?: string;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }) {
   return (
-    <motion.div
-      className={`bg-[#0d0d12]/90 backdrop-blur-md border border-white/5 rounded-2xl relative overflow-hidden ${className}`}
-      whileHover={{ borderColor: "rgba(139,92,246,0.25)" }}
-      transition={{ duration: 0.2 }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {children}
-    </motion.div>
+    <div className={className}>
+      <h3 className="font-mono text-xs tracking-widest uppercase text-zinc-500 mb-7">
+        Trajetória
+      </h3>
+      <motion.ol
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.25 }}
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.12 } },
+        }}
+        className="relative border-l border-white/10 pl-6 space-y-9"
+      >
+        {items.map((item) => (
+          <motion.li
+            key={item.title}
+            variants={{
+              hidden: { opacity: 0, x: -8 },
+              visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
+            }}
+            tabIndex={0}
+            onMouseEnter={() => onHoverItem(item.photoKey)}
+            onMouseLeave={onLeave}
+            onFocus={() => onHoverItem(item.photoKey)}
+            onBlur={onLeave}
+            className="group relative outline-none cursor-default"
+          >
+            <span
+              aria-hidden
+              className="absolute -left-[29px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-primary/10 transition-transform duration-200 group-hover:scale-125 group-focus-visible:scale-125"
+            />
+            <p className="font-mono text-xs text-primary">{item.period}</p>
+            <h4 className="text-base font-semibold text-white mt-1">{item.title}</h4>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-1">{item.detail}</p>
+          </motion.li>
+        ))}
+      </motion.ol>
+    </div>
   );
 }
 
-type InfoCard = {
-  id: string;
-  label: string;
-  highlight: string;
-  isCenter: boolean;
-  description: string;
-};
+// ─── Localização — mapa escuro + relógio GMT-3 ao vivo ───────────────────────
 
-function InfoPanel({ card }: { card: InfoCard }) {
-  const [hovered, setHovered] = useState(false);
-
+function LocationBlock({
+  onEnter,
+  onLeave,
+  className = "",
+}: {
+  onEnter: () => void;
+  onLeave: () => void;
+  className?: string;
+}) {
   return (
     <div
-      className={`relative flex-1 overflow-hidden cursor-default isolate ${
-        card.isCenter ? "border-x border-primary/20" : ""
-      }`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className={`relative h-[170px] shrink-0 overflow-hidden rounded-2xl border border-white/10 ${className}`}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
     >
-      <div className="md:absolute md:inset-0 p-3 md:p-5 flex flex-col justify-start md:justify-center gap-1 md:gap-2 h-full">
-        <p className="text-[7px] md:text-[9px] tracking-[0.1em] md:tracking-[0.25em] uppercase font-semibold text-primary">
-          {card.label}
-        </p>
-        <p className={`font-bold leading-[1.1] md:leading-snug ${
-          card.isCenter ? "text-white text-[11px] md:text-lg" : "text-zinc-100 text-[10px] md:text-base"
-        }`}>
-          {card.highlight}
-        </p>
+      <Image
+        src="/places/brasilia-map.jpg"
+        alt="Mapa de Brasília"
+        fill
+        sizes="(max-width: 1024px) 100vw, 40vw"
+        className="object-cover object-center opacity-40"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/10" />
 
-        <p className="text-[8px] md:text-[11px] text-zinc-300 md:hidden mt-1 leading-[1.3]">
-          {card.description}
-        </p>
-      </div>
-
-      {/* Overlay Animado - Apenas Desktop */}
-      <div className="hidden md:block">
-        <AnimatePresence>
-          {hovered && (
-            <motion.div
-              className="absolute inset-0 p-5 flex flex-col justify-end bg-[#0d0a18] border-t-2 border-primary/40"
-              initial={{ y: "101%" }}
-              animate={{ y: "0%" }}
-              exit={{ y: "101%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            >
-              <p className="font-bold text-white text-sm mb-2 leading-snug">
-                {card.highlight}
-              </p>
-              <p className="text-[11px] text-zinc-300 leading-relaxed">
-                {card.description}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="absolute bottom-0 left-0 p-5 z-10 flex flex-col gap-0.5">
+        <h3 className="text-2xl font-bold text-white tracking-tight">Brasília, DF</h3>
+        <p className="font-mono text-xs text-zinc-400">{PROFILE.location.coords}</p>
+        <LiveClock />
       </div>
     </div>
+  );
+}
+
+function LiveClock() {
+  const [now, setNow] = useState<string | null>(null);
+
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const tick = () => setNow(formatter.format(new Date()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <p className="font-mono text-sm text-primary tabular-nums">
+      {now ?? "--:--:--"} <span className="text-zinc-500">GMT-3</span>
+    </p>
+  );
+}
+
+// ─── O que eu construo — único card tintado, linhas abrem projetos ───────────
+
+function BuildsBlock({ className = "" }: { className?: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={`rounded-xl border border-primary/15 bg-primary/5 p-6 ${className}`}
+    >
+      <h3 className="text-lg font-semibold text-white">O que eu construo</h3>
+
+      <div className="mt-2">
+        {BUILDS.map((build) => (
+          <button
+            key={build.projectId}
+            onClick={() => dispatchSiteAction({ type: "project", id: build.projectId })}
+            className="group flex w-full items-center justify-between gap-3 border-b border-white/5 py-4 text-left last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-sm"
+          >
+            <span>
+              <span className="block text-[15px] font-medium text-zinc-100 group-hover:text-white transition-colors">
+                {build.title}
+              </span>
+              <span className="block text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                {build.detail}
+              </span>
+            </span>
+            <ArrowUpRight
+              size={16}
+              className="shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-1"
+            />
+          </button>
+        ))}
+      </div>
+
+      <a
+        href="#contato"
+        className="mt-5 inline-block text-xs text-zinc-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-sm"
+      >
+        aberto a freelas e estágio, me chama →
+      </a>
+    </motion.div>
   );
 }

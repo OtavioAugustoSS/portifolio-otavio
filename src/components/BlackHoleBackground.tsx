@@ -5,12 +5,15 @@ import { motion } from "framer-motion";
 
 export function BlackHoleBackground() {
   const [mounted, setMounted] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
-  if (!mounted) return null;
+  // Sem vídeo para quem prefere movimento reduzido — o fundo escuro basta
+  if (!mounted || reducedMotion) return null;
 
   return (
     <motion.div
