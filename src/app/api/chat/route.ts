@@ -7,10 +7,12 @@ const MAX_MESSAGES = 20;
 const MAX_CONTENT_LENGTH = 2000;
 const TIMEOUT_MS = 60_000;
 
-// Modelo padrão validado por benchmark (1,6–3,4s vs ~10-31s do llama-3.1-70b).
-// Defina NVIDIA_MODEL no ambiente para trocar sem alterar código
-// (ex.: NVIDIA_MODEL=meta/llama-3.1-70b-instruct).
-const MODEL = process.env.NVIDIA_MODEL ?? "meta/llama-4-maverick-17b-128e-instruct";
+// Modelo padrão validado por benchmark (ago/2026): TTFT ~1s, resposta completa
+// em 2–9s, zero markdown, tags de ação corretas e sem vazar raciocínio no texto.
+// Substitui meta/llama-4-maverick-17b-128e-instruct, que a NVIDIA descontinuou
+// (end of life em 2026-07-27 → HTTP 410 "Gone").
+// Defina NVIDIA_MODEL no ambiente para trocar sem alterar código.
+const MODEL = process.env.NVIDIA_MODEL ?? "minimaxai/minimax-m3";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
