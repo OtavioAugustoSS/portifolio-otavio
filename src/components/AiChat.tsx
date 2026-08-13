@@ -13,6 +13,24 @@ import {
 
 const MAX_INPUT_LENGTH = 500;
 
+// ─── Ritmo de digitação ───────────────────────────────────────────────────────
+// A NIM não entrega os deltas num ritmo constante: medindo o stream real dá pra
+// ver fases de ~490ms entre chunks (arrastado) alternando com rajadas de ~13ms.
+// Pintar cada chunk assim que chega repassa essa irregularidade pra tela — o
+// texto trava e dispara. Por isso os chunks entram num buffer e a revelação tem
+// ritmo próprio: acelera quando o buffer enche, desacelera quando esvazia.
+// O ritmo é proporcional ao que está represado (pending / TAU), o que se
+// auto-regula: em regime, revelar na mesma taxa em que chega. Por isso o piso
+// durante o stream é baixo — um piso alto esvaziaria o buffer antes do próximo
+// chunk e recriaria justamente o "trava e dispara" que se quer eliminar.
+const REVEAL_TAU = 0.35;        // s — tempo alvo para alcançar o buffer
+const DRAIN_TAU = 0.12;         // s — idem, depois que o stream fechou
+const MIN_CPS_STREAMING = 8;    // chars/s — piso anti-congelamento
+const MIN_CPS_DRAINING = 60;    // chars/s — piso na sobra final (não arrasta o fim)
+const MAX_CPS_STREAMING = 240;  // chars/s — teto durante o stream
+const MAX_CPS_DRAINING = 520;   // chars/s — teto na sobra final
+const STICK_THRESHOLD_PX = 48;  // distância do fim em que o scroll ainda "gruda"
+
 interface Message {
   id: string;
   type: "ai" | "user";
@@ -25,26 +43,39 @@ export default function AiChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const rafRef = useRef<number>(0);
   const lastPromptRef = useRef<string>("");
+  // Só puxa o scroll se o usuário estiver acompanhando o fim da conversa —
+  // se ele subiu para reler algo, a digitação não arrasta a viewport.
+  const stickToBottomRef = useRef(true);
 
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const el = scrollContainerRef.current;
+    if (!el || !stickToBottomRef.current) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
   };
 
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD_PX;
+  };
+
+  // Depende de messages.length (não de messages) porque a revelação atualiza o
+  // texto a cada frame — quem acompanha o texto crescendo é o loop de revelação.
   useEffect(() => {
+    stickToBottomRef.current = true;
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages.length, isTyping]);
 
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
@@ -66,6 +97,103 @@ export default function AiChat() {
 
   const pushErrorMessage = (text: string) => {
     setMessages(prev => [...prev, { id: crypto.randomUUID(), type: "ai", text, isError: true }]);
+  };
+
+  /**
+   * Consome o stream para um buffer e revela o texto em ritmo próprio.
+   * Retorna o texto BRUTO completo (com a tag de ação, se houver) só depois que
+   * o último caractere já apareceu na tela.
+   */
+  const revealStream = async (body: ReadableStream<Uint8Array>, aiId: string): Promise<string> => {
+    const instant =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let raw = "";        // tudo que chegou do servidor
+    let target = "";     // o que já é seguro exibir (sem tag parcial piscando)
+    let shown = 0;       // quantos chars de `target` já estão na tela
+    let carry = 0;       // resto fracionário de char entre frames
+    let done = false;    // stream fechou
+    let started = false;
+
+    const openBubble = () => {
+      if (started) return;
+      started = true;
+      setIsTyping(false);
+      setStreamingId(aiId);
+      setMessages(prev => [...prev, { id: aiId, type: "ai", text: "" }]);
+    };
+
+    const paint = (text: string) => {
+      setMessages(prev => prev.map(m => (m.id === aiId ? { ...m, text } : m)));
+      scrollToBottom("auto");
+    };
+
+    const revealed = new Promise<void>((resolve) => {
+      let last = performance.now();
+
+      const tick = (now: number) => {
+        // clamp: aba em background acumula dt gigante e despejaria tudo de uma vez
+        const dt = Math.min((now - last) / 1000, 0.1);
+        last = now;
+
+        shown = Math.min(shown, target.length);
+        const pending = target.length - shown;
+
+        if (pending > 0) {
+          const cps = Math.min(
+            Math.max(
+              pending / (done ? DRAIN_TAU : REVEAL_TAU),
+              done ? MIN_CPS_DRAINING : MIN_CPS_STREAMING
+            ),
+            done ? MAX_CPS_DRAINING : MAX_CPS_STREAMING
+          );
+          carry += cps * dt;
+          const step = Math.floor(carry);
+          if (step > 0) {
+            carry -= step;
+            shown += Math.min(step, pending);
+            paint(target.slice(0, shown));
+          }
+        } else {
+          carry = 0;
+        }
+
+        if (done && shown >= target.length) {
+          resolve();
+          return;
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    });
+
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done: closed, value } = await reader.read();
+        if (closed) break;
+        raw += decoder.decode(value, { stream: true });
+        target = splitVisible(raw);
+        if (!started && target) openBubble();
+        if (instant && started) {
+          shown = target.length;
+          paint(target);
+        }
+      }
+    } finally {
+      // Fecha o loop de revelação mesmo se o fetch for abortado
+      done = true;
+      reader.releaseLock();
+      await revealed;
+      cancelAnimationFrame(rafRef.current);
+      setStreamingId(null);
+    }
+
+    // Sem texto visível (stream vazio ou só uma tag) o chamador trata como falha
+    return started ? raw : "";
   };
 
   const handleSend = async (textToSend: string) => {
@@ -103,33 +231,11 @@ export default function AiChat() {
       // Sucesso = stream de texto puro; erro = JSON
       if (res.ok && contentType.includes("text/plain") && res.body) {
         const aiId = crypto.randomUUID();
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let raw = "";
-        let started = false;
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            raw += decoder.decode(value, { stream: true });
-
-            if (!started) {
-              started = true;
-              setIsTyping(false);
-              setMessages(prev => [...prev, { id: aiId, type: "ai", text: splitVisible(raw) }]);
-            } else {
-              const visible = splitVisible(raw);
-              setMessages(prev => prev.map(m => (m.id === aiId ? { ...m, text: visible } : m)));
-            }
-          }
-        } finally {
-          reader.releaseLock();
-        }
+        const raw = await revealStream(res.body, aiId);
 
         // Stream terminou: extrai a tag de ação e fixa o texto final limpo
         const { clean, action } = parseActionTag(raw);
-        if (!started) {
+        if (!raw) {
           // stream vazio — trata como falha
           pushErrorMessage("A IA não retornou resposta. Tente novamente em instantes.");
         } else {
@@ -163,6 +269,7 @@ export default function AiChat() {
       {/* Messages Area */}
       <div
         ref={scrollContainerRef}
+        onScroll={handleScroll}
         className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600 transition-colors"
       >
 
@@ -209,6 +316,16 @@ export default function AiChat() {
                 }`}
               >
                 {msg.text}
+                {/* Cursor: nos vãos em que a NIM ainda não mandou texto, sinaliza
+                    que a resposta continua vindo em vez de parecer travada. */}
+                {msg.id === streamingId && (
+                  <motion.span
+                    aria-hidden
+                    className="inline-block w-[2px] h-[0.95em] ml-0.5 -mb-[0.1em] rounded-full bg-[#a78bfa]"
+                    animate={{ opacity: [1, 0.15, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
               </div>
 
               {/* Chip de retry para erros */}
