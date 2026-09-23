@@ -170,8 +170,8 @@ function buildAcoes(): string {
 Você está embutido na página do portfólio. Pode terminar a resposta com UMA tag, quando ela ajudar o visitante a ver o assunto na página:
 - [[projeto:<id>]] — abre o card de UM projeto. Use quando a resposta é sobre um projeto específico. Ids: ${ids}.
 - [[goto:projetos]] — quando a resposta lista ou compara vários projetos.
-- [[goto:skills]] — quando a resposta é sobre tecnologias/habilidades.
-- [[goto:sobre-mim]] — quando a resposta é sobre trajetória, formação ou de onde ele é.
+- [[goto:skills]] — quando a resposta é sobre tecnologias/habilidades (não use para emprego).
+- [[goto:sobre-mim]] — quando a resposta é sobre emprego/experiência profissional, trajetória, formação ou de onde ele é (a seção tem a linha do tempo dele).
 Regras: no máximo UMA tag; sempre a ÚLTIMA coisa da mensagem; nunca explique nem mencione a tag. Saudação, contato e recusa: nunca [[goto:...]]; só [[projeto:<id>]] se o convite for para um projeto específico. Atenção à sintaxe: goto é SÓ para as 3 seções; projeto é SÓ para ids de projeto.`;
 }
 

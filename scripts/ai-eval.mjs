@@ -34,7 +34,7 @@ const GLOBAL_FORBIDDEN = [/stripe/i, /flutter/i, /\bgolang\b|\bem go\b/i, /nestj
  * maxSentences: limite de frases · maxWords: limite de palavras (padrão 80) · variety: entra no teste de variação
  */
 const CASES = [
-  { id: "trabalho", turns: ["Onde ele trabalha hoje?"], must: [/protesto ?24h/i], any: [/php/i, /estági/i], maxSentences: 3 },
+  { id: "trabalho", turns: ["Onde ele trabalha hoje?"], must: [/protesto ?24h/i], any: [/php/i, /estági/i], notTag: ["skills", "projetos"], maxSentences: 3 },
   { id: "sobre", turns: ["Quem é o Otavio?"], must: [/otavio/i], any: [/protesto/i, /engenharia de software/i, /full ?stack/i], maxSentences: 4, variety: true },
   { id: "projetos-lista", turns: ["Quais projetos ele já fez?"], must: [/pixelplace/i, /erp/i, /participa/i], tag: "any", maxSentences: 3, noList: true },
   { id: "python", turns: ["Quais projetos em Python ele fez?"], must: [/barbearia|recepcionista/i, /cl[ií]nico|psic/i, /assistente/i, /passagens/i, /participa/i], forbid: [/pixelplace/i] },
@@ -95,6 +95,7 @@ function check(c, raw) {
   if (c.tag === "none" && tags.length) problems.push("tag onde não devia");
   if (c.tag === "no-goto" && tags.some((t) => SECTIONS.includes(t[2].toLowerCase()))) problems.push("tag de seção onde não devia");
   if (c.tag === "any" && !tags.length) problems.push("faltou tag");
+  for (const t of tags) if ((c.notTag ?? []).includes(t[2].toLowerCase())) problems.push(`tag errada: ${t[2]}`);
   if (c.tag && c.tag.includes(":")) {
     const got = tags[0] ? `${tags[0][1]}:${tags[0][2]}`.toLowerCase() : "nenhuma";
     if (got !== c.tag) problems.push(`tag esperada ${c.tag}, veio ${got}`);
