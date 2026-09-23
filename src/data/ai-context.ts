@@ -101,10 +101,12 @@ Para "o que ele fez com X", cruze os parênteses acima com os trabalhos freelanc
 function buildProjetos(): string {
   const blocks = projects.map((p) => {
     const how = p.details.howItWorks.join("; ");
+    const extra = EXTRA_FACTS.filter((f) => f.projectId === p.id).map((f) => `
+  Mais detalhes: ${f.body}`).join("");
     return `- ${shortTitle(p)} (id: ${p.id}) — ${p.description}
   Visão geral: ${p.details.overview}
   Como funciona: ${how}.
-  Stack: ${p.details.techList.join(", ")}.`;
+  Stack: ${p.details.techList.join(", ")}.${extra}`;
   });
   return `[PROJETOS COM CARD NA SEÇÃO "PROJETOS" DO SITE — são ${projects.length}, use SEMPRE estes nomes]
 ${blocks.join("\n")}`;
@@ -112,7 +114,7 @@ ${blocks.join("\n")}`;
 
 function buildFatosExtras(): string {
   const blocks = EXTRA_FACTS
-    .filter((f) => !f.title.startsWith("Tecnologias adicionais"))
+    .filter((f) => !f.projectId && !f.title.startsWith("Tecnologias adicionais"))
     .map((f) => `- ${f.title}: ${f.body}`);
   return `[TRABALHOS FREELANCE E FATOS EXTRAS — NÃO têm card no site; cite como trabalhos/experiências, nunca como "projetos do portfólio"]
 ${blocks.join("\n")}`;
@@ -164,7 +166,7 @@ Boa: 1 frase, com as suas palavras, dizendo que ali o assunto é o Otavio e conv
 
 // Fica no FIM do prompt de propósito: o modelo pesa mais o que leu por último.
 const FINAL_CHECK = `[ANTES DE ENVIAR, CONFIRA]
-1. Respondeu SÓ o que foi perguntado, no tamanho certo (geral 1–3 frases; detalhe até 4; saudação e recusa 1 frase)? Numa saudação, NÃO resuma a carreira dele: só cumprimente e convide.
+1. Respondeu SÓ o que foi perguntado, no tamanho certo (geral 1–3 frases; detalhe até 4; saudação até ~40 palavras; recusa 1 frase)? Numa saudação, NÃO resuma a carreira dele: só cumprimente e convide.
 2. Cada fato está no contexto? Nada de supor ligações que o contexto não afirma (ex.: onde ele usa um idioma, se um emprego era estágio, quanto tempo durou algo).
 Frases curtas: quebre em duas uma frase que passe de ~35 palavras.
 3. Tag: no máximo uma, no fim, e só se levar a algo que a resposta citou. Saudação, contato e recusa: só [[projeto:<id>]], e só se convidou para um projeto.

@@ -38,12 +38,18 @@ function clientIp(request: Request): string {
 function rateLimit(ip: string, now = Date.now()): number {
   const longest = RATE_LIMITS[RATE_LIMITS.length - 1].windowMs;
   const list = (hits.get(ip) ?? []).filter((t) => now - t < longest);
+  // Retry-After = a MAIOR espera entre as janelas estouradas: responder só a
+  // de 1 min quando a de 1 h também está cheia gera um 429 atrás do outro.
+  let wait = 0;
   for (const { windowMs, max } of RATE_LIMITS) {
     const inWindow = list.filter((t) => now - t < windowMs);
     if (inWindow.length >= max) {
-      hits.set(ip, list);
-      return Math.ceil((inWindow[0] + windowMs - now) / 1000);
+      wait = Math.max(wait, Math.ceil((inWindow[inWindow.length - max] + windowMs - now) / 1000));
     }
+  }
+  if (wait > 0) {
+    hits.set(ip, list);
+    return wait;
   }
   list.push(now);
   hits.set(ip, list);
@@ -145,24 +151,40 @@ async function* readSse(upstream: ReadableStream<Uint8Array>): AsyncGenerator<Ss
   }
 }
 
+// Só começa uma nova tentativa se ainda sobrar tempo para a RESPOSTA inteira
+// caber no prazo: gastar o prazo tentando cortava o texto no meio.
+const RETRY_BUDGET_MS = 25_000;
+
+/** Espera que termina antes se o sinal abortar (cliente saiu / prazo). */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => { clearTimeout(t); resolve(); }, { once: true });
+  });
+}
+
 // Abre o stream e só o entrega depois que chegar o 1º texto de verdade.
 // Timeout / 5xx / 429 / erro dentro do stream / stream vazio → tenta de novo.
 // Seguro: tudo isso acontece antes de qualquer byte ser enviado ao cliente.
+// `signal` junta o prazo total (= maxDuration) com a desconexão do cliente:
+// se o visitante fecha a aba, as tentativas e o fetch da NIM param de gastar a chave.
 async function openNimStream(
   apiKey: string,
   messages: ChatMessage[],
+  signal: AbortSignal,
 ): Promise<{ first: string; rest: AsyncGenerator<SseItem> } | Response> {
-  // Um prazo só para todas as tentativas e para o stream inteiro (= maxDuration).
-  const signal = AbortSignal.timeout(TIMEOUT_MS);
+  const started = Date.now();
   let lastError = "";
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0 && Date.now() - started > RETRY_BUDGET_MS) break;
+    signal.throwIfAborted();
     const response = await fetchNim(apiKey, messages, signal);
 
     if (response.status >= 500 || response.status === 429) {
       lastError = `HTTP ${response.status}`;
       await response.body?.cancel();
-      if (attempt < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+      if (attempt < MAX_ATTEMPTS - 1) await sleep(RETRY_DELAYS_MS[attempt], signal);
       continue;
     }
     if (!response.ok) {
@@ -182,21 +204,32 @@ async function openNimStream(
     await items.return(undefined); // cancela o stream que falhou
     lastError = head.done || !("error" in head.value) ? "stream vazio" : head.value.error;
     console.warn(`Chat API: tentativa ${attempt + 1}/${MAX_ATTEMPTS} falhou (${lastError})`);
-    if (attempt < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+    if (attempt < MAX_ATTEMPTS - 1) await sleep(RETRY_DELAYS_MS[attempt], signal);
   }
   throw new RetryableNimError(lastError);
 }
 
 // Converte os deltas em texto puro para o cliente.
-function toTextStream(first: string, rest: AsyncGenerator<SseItem>): ReadableStream<Uint8Array> {
+// Erro DEPOIS do 1º texto (a NIM às vezes manda o 503 no meio) encerra o stream
+// com erro, em vez de fechar normal: fechar normal fazia o cliente guardar o
+// trecho cortado como se fosse a resposta completa.
+function toTextStream(
+  first: string,
+  rest: AsyncGenerator<SseItem>,
+  abortUpstream: () => void,
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(encoder.encode(first));
       try {
         for await (const item of rest) {
-          if ("text" in item) controller.enqueue(encoder.encode(item.text));
-          else console.warn("Chat API: erro no meio do stream:", item.error);
+          if ("text" in item) {
+            controller.enqueue(encoder.encode(item.text));
+          } else {
+            console.warn("Chat API: erro no meio do stream:", item.error);
+            throw new Error(item.error);
+          }
         }
         controller.close();
       } catch (err) {
@@ -204,6 +237,9 @@ function toTextStream(first: string, rest: AsyncGenerator<SseItem>): ReadableStr
       }
     },
     cancel() {
+      // rest.return() sozinho só roda quando o próximo chunk chegar (o gerador
+      // está parado num read); abortar o fetch corta a NIM na hora.
+      abortUpstream();
       rest.return(undefined).catch(() => {});
     },
   });
@@ -220,10 +256,14 @@ export async function POST(request: Request) {
     }
   }
 
+  let messages: unknown;
   try {
-    const body = await request.json();
-    const { messages } = body;
+    messages = (await request.json())?.messages;
+  } catch {
+    messages = undefined; // JSON inválido → cai no 400 abaixo
+  }
 
+  try {
     if (!isValidMessages(messages)) {
       return NextResponse.json(
         { error: "Payload inválido." },
@@ -239,11 +279,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const opened = await openNimStream(apiKey, messages);
+    const upstream = new AbortController();
+    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(TIMEOUT_MS), upstream.signal]);
+    const opened = await openNimStream(apiKey, messages, signal);
     if (opened instanceof Response) return opened;
 
     // Stream de texto puro: o cliente distingue sucesso (text/plain) de erro (JSON).
-    return new Response(toTextStream(opened.first, opened.rest), {
+    return new Response(toTextStream(opened.first, opened.rest, () => upstream.abort()), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
@@ -252,6 +294,8 @@ export async function POST(request: Request) {
     });
 
   } catch (error: unknown) {
+    // O visitante saiu/abortou: não há ninguém para responder nem erro a logar.
+    if (request.signal.aborted) return new Response(null, { status: 499 });
     const message = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("Chat API Error:", message);
     const isTimeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");

@@ -5,7 +5,12 @@
 //  ► A página NÃO renderiza nada daqui; só o buildAiContext() consome.
 // ═════════════════════════════════════════════════════════════════════════════
 
-export type ExtraFact = { title: string; body: string };
+/**
+ * `projectId` liga o fato a um card de projects.ts: o texto entra no bloco
+ * daquele projeto no contexto da IA (sem ele, a IA tratava "Painel RaizTech"
+ * como um trabalho à parte do card "Painel IoT").
+ */
+export type ExtraFact = { title: string; body: string; projectId?: string };
 
 export const EXTRA_FACTS: ExtraFact[] = [
   {
@@ -26,10 +31,12 @@ export const EXTRA_FACTS: ExtraFact[] = [
   },
   {
     title: "Detalhe técnico — Painel RaizTech",
+    projectId: "raiztech-iot",
     body: "Co-desenvolvimento da plataforma de gestão de irrigadores inteligentes: arquitetura de dados para ingestão contínua de alto volume de telemetria sem perda de performance, com métricas em tempo real para redução de desperdícios hídricos e energéticos. Stack completa: React, TypeScript, Vite, Tailwind CSS, Recharts, React Query, Supabase, MySQL, MongoDB.",
   },
   {
     title: "Detalhe técnico — Participa DF",
+    projectId: "participa-df",
     body: "Plataforma desenvolvida em Hackathon seguindo as diretrizes de acessibilidade WCAG 2.1 AA. Back-end assíncrono para mídias pesadas com integração NLP (IA) processando análise de sentimentos e classificação de urgência, eliminando triagens manuais.",
   },
   {

@@ -274,7 +274,9 @@ export default function AiChat() {
       .slice(-MAX_HISTORY_SENT)
       .map(msg => ({
         role: msg.type === "ai" ? "assistant" : "user",
-        content: msg.type === "ai" && msg.action ? `${msg.text} ${actionTag(msg.action)}` : msg.text,
+        // o servidor recusa conteúdo > 2000 chars; uma resposta longa não pode
+        // travar todas as perguntas seguintes da conversa
+        content: (msg.type === "ai" && msg.action ? `${msg.text} ${actionTag(msg.action)}` : msg.text).slice(0, 2000),
       }));
     // A API espera que a conversa comece pelo visitante
     while (history.length && history[0].role !== "user") history.shift();
@@ -282,6 +284,7 @@ export default function AiChat() {
 
     abortRef.current?.abort();
     abortRef.current = new AbortController();
+    let aiId: string | null = null; // id da bolha em streaming, se ela chegou a abrir
 
     try {
       const res = await fetch("/api/chat", {
@@ -295,7 +298,7 @@ export default function AiChat() {
 
       // Sucesso = stream de texto puro; erro = JSON
       if (res.ok && contentType.includes("text/plain") && res.body) {
-        const aiId = crypto.randomUUID();
+        aiId = crypto.randomUUID();
         const raw = await revealStream(res.body, aiId);
 
         // Stream terminou: extrai a tag de ação e fixa o texto final limpo
@@ -325,7 +328,15 @@ export default function AiChat() {
       }
     } catch (_error) {
       if ((_error as Error).name === "AbortError") return;
-      pushErrorMessage("Sem conexão com o servidor. Verifique sua internet e tente de novo.");
+      if (aiId) {
+        // Caiu no MEIO da resposta: o trecho parcial não pode ficar como se fosse
+        // a resposta completa (nem entrar no histórico) — vira erro com retry.
+        const partialId = aiId;
+        setMessages(prev => prev.filter(m => m.id !== partialId));
+        pushErrorMessage("A resposta foi interrompida no meio. Tente de novo.");
+      } else {
+        pushErrorMessage("Sem conexão com o servidor. Verifique sua internet e tente de novo.");
+      }
     } finally {
       setIsTyping(false);
     }
