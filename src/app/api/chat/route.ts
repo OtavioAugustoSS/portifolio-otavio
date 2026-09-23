@@ -7,12 +7,14 @@ const MAX_MESSAGES = 20;
 const MAX_CONTENT_LENGTH = 2000;
 const TIMEOUT_MS = 60_000;
 
-// Modelo padrão validado por benchmark (ago/2026): TTFT ~1s, resposta completa
-// em 2–9s, zero markdown, tags de ação corretas e sem vazar raciocínio no texto.
-// Substitui meta/llama-4-maverick-17b-128e-instruct, que a NVIDIA descontinuou
-// (end of life em 2026-07-27 → HTTP 410 "Gone").
+// Modelo padrão validado por benchmark (set/2026): TTFT <1s, resposta completa
+// em ~1–3s. É um modelo de raciocínio: o `enable_thinking: false` abaixo é
+// OBRIGATÓRIO — sem ele leva 30s+ e vaza o raciocínio dentro do texto.
+// Substitui minimaxai/minimax-m3 (end of life em 2026-09-09 → HTTP 410 "Gone").
+// Na mesma medição, deepseek-v4.1-flash / glm-5.3 / kimi-k3 / gemma-4 não
+// mandaram nem o 1º byte em 45s (fila saturada na NIM).
 // Defina NVIDIA_MODEL no ambiente para trocar sem alterar código.
-const MODEL = process.env.NVIDIA_MODEL ?? "minimaxai/minimax-m3";
+const MODEL = process.env.NVIDIA_MODEL ?? "nvidia/nemotron-3-super-120b-a12b";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -28,86 +30,141 @@ function isValidMessages(val: unknown): val is ChatMessage[] {
   );
 }
 
-// Chama a NIM com retry automático (1x) em timeout / 5xx / 429.
-// Seguro: o retry acontece antes de qualquer byte ser enviado ao cliente.
-async function fetchNim(apiKey: string, messages: ChatMessage[], attempt = 0): Promise<Response> {
-  let response: Response;
-  try {
-    response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: AI_CONTEXT },
-          ...messages,
-        ],
-        temperature: 0.3,
-        max_tokens: 512,
-        stream: true,
-      }),
-    });
-  } catch (err) {
-    const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-    if (isTimeout && attempt === 0) return fetchNim(apiKey, messages, 1);
-    throw err;
-  }
+// Tentativas totais por pergunta. A sobrecarga da NIM costuma falhar rápido
+// (~0,7s), então tentar de novo sai barato — mas em rajada falha junto,
+// por isso a espera crescente entre as tentativas.
+const MAX_ATTEMPTS = 4;
+const RETRY_DELAYS_MS = [400, 1000, 2000];
 
-  if ((response.status >= 500 || response.status === 429) && attempt === 0) {
-    return fetchNim(apiKey, messages, 1);
-  }
-  return response;
+class RetryableNimError extends Error {}
+
+function fetchNim(apiKey: string, messages: ChatMessage[], signal: AbortSignal): Promise<Response> {
+  return fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    signal,
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: "system", content: AI_CONTEXT },
+        ...messages,
+      ],
+      temperature: 0.3,
+      max_tokens: 512,
+      stream: true,
+      // Desliga o raciocínio (modelos que não conhecem a flag a ignoram).
+      chat_template_kwargs: { enable_thinking: false },
+    }),
+  });
 }
 
-// Converte o SSE da NIM (formato OpenAI) em deltas de texto puro.
-function sseToTextStream(upstream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let buffer = "";
+type SseItem = { text: string } | { error: string };
 
+// Lê o SSE da NIM (formato OpenAI) e produz deltas de texto ou erros.
+// ⚠️ A NIM responde HTTP 200 e manda a sobrecarga DENTRO do stream:
+// `data: {"error":{"message":"Service temporarily overloaded","code":503}}`.
+async function* readSse(upstream: ReadableStream<Uint8Array>): AsyncGenerator<SseItem> {
+  const decoder = new TextDecoder();
+  const reader = upstream.getReader();
+  let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Eventos SSE são separados por linha em branco
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const event of events) {
+        for (const line of event.split("\n")) {
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          let json;
+          try {
+            json = JSON.parse(payload);
+          } catch {
+            continue; // linha SSE malformada — ignora
+          }
+          if (json?.error) {
+            yield { error: String(json.error.message ?? "erro desconhecido") };
+            continue;
+          }
+          const delta: unknown = json?.choices?.[0]?.delta?.content;
+          if (typeof delta === "string" && delta.length > 0) yield { text: delta };
+        }
+      }
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+}
+
+// Abre o stream e só o entrega depois que chegar o 1º texto de verdade.
+// Timeout / 5xx / 429 / erro dentro do stream / stream vazio → tenta de novo.
+// Seguro: tudo isso acontece antes de qualquer byte ser enviado ao cliente.
+async function openNimStream(
+  apiKey: string,
+  messages: ChatMessage[],
+): Promise<{ first: string; rest: AsyncGenerator<SseItem> } | Response> {
+  // Um prazo só para todas as tentativas e para o stream inteiro (= maxDuration).
+  const signal = AbortSignal.timeout(TIMEOUT_MS);
+  let lastError = "";
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const response = await fetchNim(apiKey, messages, signal);
+
+    if (response.status >= 500 || response.status === 429) {
+      lastError = `HTTP ${response.status}`;
+      await response.body?.cancel();
+      if (attempt < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+      continue;
+    }
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: `Erro na API NVIDIA (${response.status}): ${errorText}` },
+        { status: response.status }
+      );
+    }
+    if (!response.body) throw new RetryableNimError("Resposta inesperada da API.");
+
+    // next() manual: sair de um for-await fecharia o gerador junto.
+    const items = readSse(response.body);
+    const head = await items.next();
+    if (!head.done && "text" in head.value) return { first: head.value.text, rest: items };
+
+    await items.return(undefined); // cancela o stream que falhou
+    lastError = head.done || !("error" in head.value) ? "stream vazio" : head.value.error;
+    console.warn(`Chat API: tentativa ${attempt + 1}/${MAX_ATTEMPTS} falhou (${lastError})`);
+    if (attempt < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+  }
+  throw new RetryableNimError(lastError);
+}
+
+// Converte os deltas em texto puro para o cliente.
+function toTextStream(first: string, rest: AsyncGenerator<SseItem>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = upstream.getReader();
+      controller.enqueue(encoder.encode(first));
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          // Eventos SSE são separados por linha em branco
-          const events = buffer.split("\n\n");
-          buffer = events.pop() ?? "";
-
-          for (const event of events) {
-            for (const line of event.split("\n")) {
-              if (!line.startsWith("data:")) continue;
-              const payload = line.slice(5).trim();
-              if (!payload || payload === "[DONE]") continue;
-              try {
-                const json = JSON.parse(payload);
-                const delta: unknown = json?.choices?.[0]?.delta?.content;
-                if (typeof delta === "string" && delta.length > 0) {
-                  controller.enqueue(encoder.encode(delta));
-                }
-              } catch {
-                // linha SSE malformada — ignora
-              }
-            }
-          }
+        for await (const item of rest) {
+          if ("text" in item) controller.enqueue(encoder.encode(item.text));
+          else console.warn("Chat API: erro no meio do stream:", item.error);
         }
         controller.close();
       } catch (err) {
         controller.error(err);
-      } finally {
-        reader.releaseLock();
       }
     },
     cancel() {
-      upstream.cancel().catch(() => {});
+      rest.return(undefined).catch(() => {});
     },
   });
 }
@@ -132,25 +189,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await fetchNim(apiKey, messages);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Erro na API NVIDIA (${response.status}): ${errorText}` },
-        { status: response.status >= 500 ? 502 : response.status }
-      );
-    }
-
-    if (!response.body) {
-      return NextResponse.json(
-        { error: "Resposta inesperada da API." },
-        { status: 502 }
-      );
-    }
+    const opened = await openNimStream(apiKey, messages);
+    if (opened instanceof Response) return opened;
 
     // Stream de texto puro: o cliente distingue sucesso (text/plain) de erro (JSON).
-    return new Response(sseToTextStream(response.body), {
+    return new Response(toTextStream(opened.first, opened.rest), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
@@ -162,6 +205,12 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("Chat API Error:", message);
     const isTimeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    if (error instanceof RetryableNimError) {
+      return NextResponse.json(
+        { error: "A IA está sobrecarregada no momento. Tente de novo em instantes." },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: isTimeout ? "A IA demorou demais para responder." : "Falha ao se comunicar com a IA." },
       { status: 504 }
