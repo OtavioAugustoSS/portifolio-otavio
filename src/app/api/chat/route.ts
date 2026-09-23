@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { aiContextFor } from "@/data/ai-context";
+import { NO_INFO_TAG } from "@/lib/site-actions";
 
 export const maxDuration = 60;
 
@@ -217,14 +218,17 @@ function toTextStream(
   first: string,
   rest: AsyncGenerator<SseItem>,
   abortUpstream: () => void,
+  question: string,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
+  let full = first;
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(encoder.encode(first));
       try {
         for await (const item of rest) {
           if ("text" in item) {
+            full += item.text;
             controller.enqueue(encoder.encode(item.text));
           } else {
             console.warn("Chat API: erro no meio do stream:", item.error);
@@ -232,6 +236,12 @@ function toTextStream(
           }
         }
         controller.close();
+        // Memória que cresce com o uso: perguntas que a IA não soube responder
+        // ficam nos logs (Vercel → Logs, filtrar por "sem-info") para virar
+        // fato novo em src/data/facts.ts.
+        if (full.toLowerCase().includes(NO_INFO_TAG)) {
+          console.info(`[sem-info] pergunta sem resposta no contexto: ${JSON.stringify(question.slice(0, 300))}`);
+        }
       } catch (err) {
         controller.error(err);
       }
@@ -285,7 +295,8 @@ export async function POST(request: Request) {
     if (opened instanceof Response) return opened;
 
     // Stream de texto puro: o cliente distingue sucesso (text/plain) de erro (JSON).
-    return new Response(toTextStream(opened.first, opened.rest, () => upstream.abort()), {
+    const question = messages[messages.length - 1]?.content ?? "";
+    return new Response(toTextStream(opened.first, opened.rest, () => upstream.abort(), question), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",

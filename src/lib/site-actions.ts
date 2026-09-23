@@ -26,6 +26,10 @@ const PROJECT_IDS = new Set(projects.map((p) => p.id));
 // Consome o whitespace ANTES da tag para não sobrar espaço duplo ao removê-la
 // (sem achatar quebras de linha legítimas da resposta).
 const TAG_REGEX = /\s*\[\[\s*(goto|projeto)\s*:\s*([\w-]+)\s*\]\]/gi;
+// Marcador que a IA usa quando a pergunta não tem resposta no contexto. O
+// servidor registra a pergunta (ver route.ts); aqui ele só é escondido.
+export const NO_INFO_TAG = "[[sem-info]]";
+const NO_INFO_REGEX = /\s*\[\[\s*sem-info\s*\]\]/gi;
 
 /**
  * Extrai a primeira tag de ação VÁLIDA do texto e remove TODAS as tags
@@ -47,7 +51,7 @@ export function parseActionTag(raw: string): { clean: string; action: SiteAction
       }
     }
     return "";
-  }).trim();
+  }).replace(NO_INFO_REGEX, "").trim();
 
   return { clean, action };
 }
@@ -58,9 +62,10 @@ export function parseActionTag(raw: string): { clean: string; action: SiteAction
  */
 export function splitVisible(raw: string): string {
   // remove tags completas já recebidas
-  let visible = raw.replace(TAG_REGEX, "");
-  // esconde início de tag não fechada no fim do texto ("[", "[[", "[[proj...")
-  visible = visible.replace(/\[{1,2}[^\]]*$/, "");
+  let visible = raw.replace(TAG_REGEX, "").replace(NO_INFO_REGEX, "");
+  // esconde início de tag não fechada no fim do texto ("[", "[[", "[[proj...",
+  // e também "[[sem-info]" — já tem um "]" mas ainda não fechou)
+  visible = visible.replace(/\[{1,2}[^\]]*\]?$/, "");
   return visible.trimEnd();
 }
 

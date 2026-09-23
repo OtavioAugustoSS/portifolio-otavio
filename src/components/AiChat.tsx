@@ -41,6 +41,31 @@ const MAX_CPS_STREAMING = 240;  // chars/s — teto durante o stream
 const MAX_CPS_DRAINING = 520;   // chars/s — teto na sobra final
 const STICK_THRESHOLD_PX = 48;  // distância do fim em que o scroll ainda "gruda"
 
+// E-mails nas respostas da IA viram link mailto (o contato é a pergunta mais
+// comum e copiar o endereço de uma bolha no celular é chato).
+const EMAIL_RE = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g;
+
+function Linkified({ text, isUser }: { text: string; isUser: boolean }) {
+  if (isUser) return <>{text}</>;
+  return (
+    <>
+      {text.split(EMAIL_RE).map((part, i) =>
+        i % 2 === 1 ? (
+          <a
+            key={i}
+            href={`mailto:${part}`}
+            className="text-[#c4b5fd] underline decoration-[#8b5cf6]/50 underline-offset-2 hover:decoration-[#c4b5fd] break-all"
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 interface Message {
   id: string;
   type: "ai" | "user";
@@ -394,7 +419,7 @@ export default function AiChat() {
                       : "bg-[#18181b] text-zinc-300 rounded-2xl rounded-tl-sm border border-white/5"
                 }`}
               >
-                {msg.text}
+                <Linkified text={msg.text} isUser={msg.type === "user"} />
                 {/* Cursor: nos vãos em que a NIM ainda não mandou texto, sinaliza
                     que a resposta continua vindo em vez de parecer travada. */}
                 {msg.id === streamingId && (
