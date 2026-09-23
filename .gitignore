@@ -53,3 +53,6 @@ AGENTS.md
 .windsurfrules
 .codex/
 .github/copilot-instructions.md
+
+# Playwright MCP (logs/snapshots de validação)
+.playwright-mcp/

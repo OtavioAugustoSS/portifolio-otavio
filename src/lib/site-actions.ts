@@ -35,12 +35,14 @@ const TAG_REGEX = /\s*\[\[\s*(goto|projeto)\s*:\s*([\w-]+)\s*\]\]/gi;
 export function parseActionTag(raw: string): { clean: string; action: SiteAction | null } {
   let action: SiteAction | null = null;
 
-  const clean = raw.replace(TAG_REGEX, (_match, kind: string, value: string) => {
+  const clean = raw.replace(TAG_REGEX, (_match, _kind: string, value: string) => {
+    // O valor decide a ação, não o verbo: o modelo às vezes troca a sintaxe
+    // ([[goto:raiztech-iot]], [[projeto:skills]]) e o botão sumia à toa.
     if (!action) {
       const v = value.toLowerCase();
-      if (kind.toLowerCase() === "goto" && (SECTIONS as readonly string[]).includes(v)) {
+      if ((SECTIONS as readonly string[]).includes(v)) {
         action = { type: "goto", section: v as SectionId };
-      } else if (kind.toLowerCase() === "projeto" && PROJECT_IDS.has(v)) {
+      } else if (PROJECT_IDS.has(v)) {
         action = { type: "project", id: v };
       }
     }
@@ -60,6 +62,11 @@ export function splitVisible(raw: string): string {
   // esconde início de tag não fechada no fim do texto ("[", "[[", "[[proj...")
   visible = visible.replace(/\[{1,2}[^\]]*$/, "");
   return visible.trimEnd();
+}
+
+/** Inverso do parseActionTag: a tag como a IA a escreveu (para o histórico). */
+export function actionTag(action: SiteAction): string {
+  return action.type === "goto" ? `[[goto:${action.section}]]` : `[[projeto:${action.id}]]`;
 }
 
 /** Rótulo do chip de ação exibido sob a resposta da IA. */

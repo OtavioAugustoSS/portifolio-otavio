@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AI_CONTEXT } from "@/data/ai-context";
+import { aiContextFor } from "@/data/ai-context";
 
 export const maxDuration = 60;
 
@@ -32,9 +32,10 @@ function isValidMessages(val: unknown): val is ChatMessage[] {
 
 // Tentativas totais por pergunta. A sobrecarga da NIM costuma falhar rápido
 // (~0,7s), então tentar de novo sai barato — mas em rajada falha junto,
-// por isso a espera crescente entre as tentativas.
-const MAX_ATTEMPTS = 4;
-const RETRY_DELAYS_MS = [400, 1000, 2000];
+// por isso a espera crescente entre as tentativas. Com 4 tentativas (~5s)
+// ainda sobravam ~10% de 503 em sequência de perguntas; 6 (~12s) cobre a rajada.
+const MAX_ATTEMPTS = 6;
+const RETRY_DELAYS_MS = [400, 800, 1500, 2500, 4000];
 
 class RetryableNimError extends Error {}
 
@@ -49,10 +50,13 @@ function fetchNim(apiKey: string, messages: ChatMessage[], signal: AbortSignal):
     body: JSON.stringify({
       model: MODEL,
       messages: [
-        { role: "system", content: AI_CONTEXT },
+        { role: "system", content: aiContextFor() },
         ...messages,
       ],
-      temperature: 0.3,
+      // 0.6: varia a redação entre respostas sem perder a precisão dos fatos
+      // (medido com scripts/ai-eval.mjs; 0.3 repetia quase a mesma frase).
+      temperature: 0.6,
+      top_p: 0.9,
       max_tokens: 512,
       stream: true,
       // Desliga o raciocínio (modelos que não conhecem a flag a ignoram).

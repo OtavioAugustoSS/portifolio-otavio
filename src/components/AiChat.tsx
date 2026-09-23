@@ -9,9 +9,18 @@ import {
   parseActionTag,
   splitVisible,
   actionLabel,
+  actionTag,
 } from "@/lib/site-actions";
 
 const MAX_INPUT_LENGTH = 500;
+
+// ─── Memória da conversa ──────────────────────────────────────────────────────
+// A conversa sobrevive a um F5/voltar para a página (localStorage), mas só as
+// últimas mensagens vão para a API: o servidor aceita no máximo 20, e histórico
+// longo só deixa a resposta mais lenta sem melhorar o contexto.
+const STORAGE_KEY = "portfolio-ai-chat-v1";
+const MAX_STORED_MESSAGES = 40;
+const MAX_HISTORY_SENT = 12; // + a pergunta nova = 13 (servidor: máx 20)
 
 // ─── Ritmo de digitação ───────────────────────────────────────────────────────
 // A NIM não entrega os deltas num ritmo constante: medindo o stream real dá pra
@@ -44,6 +53,9 @@ export default function AiChat() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
+  // Ocupado = esperando o 1º byte OU ainda revelando a resposta. Enviar nesse
+  // meio-tempo abortava o stream e deixava a resposta anterior cortada.
+  const busy = isTyping || streamingId !== null;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const rafRef = useRef<number>(0);
@@ -79,10 +91,47 @@ export default function AiChat() {
     };
   }, []);
 
+  // Restaura a conversa salva (no effect, não no useState: o SSR renderiza
+  // vazio e ler o storage no 1º render quebraria a hidratação).
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+      if (Array.isArray(saved) && saved.length) {
+        setMessages(saved.filter((m): m is Message =>
+          typeof m?.id === "string" && (m.type === "ai" || m.type === "user") && typeof m.text === "string"
+        ));
+      }
+    } catch { /* storage indisponível ou corrompido — começa do zero */ }
+    restoredRef.current = true;
+  }, []);
+
+  // Salva só fora do streaming (evita escrever a cada frame) e sem bolhas de erro.
+  useEffect(() => {
+    if (!restoredRef.current || streamingId) return;
+    try {
+      // Lista vazia NÃO apaga: no 1º render ela ainda está vazia (a restauração
+      // é assíncrona) e apagaria o que ia ser restaurado. Quem limpa é o reset.
+      const keep = messages.filter(m => !m.isError).slice(-MAX_STORED_MESSAGES);
+      if (keep.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(keep));
+    } catch { /* cota cheia / modo privado — a conversa só não persiste */ }
+  }, [messages, streamingId]);
+
+  const resetConversation = () => {
+    abortRef.current?.abort();
+    cancelAnimationFrame(rafRef.current);
+    setStreamingId(null);
+    setIsTyping(false);
+    setMessages([]);
+    lastPromptRef.current = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* sem storage */ }
+  };
+
+  // A IA fala SOBRE o Otavio em 3ª pessoa — perguntar "você" confunde o modelo.
   const predefinedActions = [
-    { label: "Trabalho", prompt: "Onde você já trabalhou e qual sua experiência profissional?" },
-    { label: "Sobre mim", prompt: "Pode me contar um pouco sobre o Otavio?" },
-    { label: "Habilidades", prompt: "Quais são as suas principais habilidades técnicas e linguagens de programação?" },
+    { label: "Trabalho", prompt: "Onde o Otavio trabalha e qual a experiência profissional dele?" },
+    { label: "Sobre ele", prompt: "Pode me contar um pouco sobre o Otavio?" },
+    { label: "Habilidades", prompt: "Quais são as principais habilidades técnicas do Otavio?" },
     { label: "Projetos", prompt: "Quais projetos o Otavio já desenvolveu?" },
     { label: "Contato", prompt: "Como posso entrar em contato com o Otavio profissionalmente?" }
   ];
@@ -198,7 +247,7 @@ export default function AiChat() {
 
   const handleSend = async (textToSend: string) => {
     const messageText = typeof textToSend === "string" ? textToSend : inputValue;
-    if (!messageText.trim() || isTyping) return;
+    if (!messageText.trim() || busy) return;
     lastPromptRef.current = messageText;
 
     const newUserMsg: Message = { id: crypto.randomUUID(), type: "user", text: messageText };
@@ -206,13 +255,17 @@ export default function AiChat() {
     setInputValue("");
     setIsTyping(true);
 
-    // Histórico SEM mensagens de erro (não são falas reais da IA)
+    // Histórico SEM mensagens de erro (não são falas reais da IA). A resposta
+    // volta COM a tag que ela usou: o modelo vê o próprio formato e o mantém.
     const history = messages
-      .filter(msg => !msg.isError)
+      .filter(msg => !msg.isError && msg.text)
+      .slice(-MAX_HISTORY_SENT)
       .map(msg => ({
         role: msg.type === "ai" ? "assistant" : "user",
-        content: msg.text
+        content: msg.type === "ai" && msg.action ? `${msg.text} ${actionTag(msg.action)}` : msg.text,
       }));
+    // A API espera que a conversa comece pelo visitante
+    while (history.length && history[0].role !== "user") history.shift();
     history.push({ role: "user", content: messageText });
 
     abortRef.current?.abort();
@@ -332,7 +385,7 @@ export default function AiChat() {
               {msg.isError && (
                 <button
                   onClick={() => handleSend(lastPromptRef.current)}
-                  disabled={isTyping || !lastPromptRef.current}
+                  disabled={busy || !lastPromptRef.current}
                   className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#18181b] hover:bg-[#27272a] text-zinc-300 border border-white/10 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/60"
                 >
                   <RotateCcw size={12} />
@@ -374,11 +427,22 @@ export default function AiChat() {
 
       {/* Action Chips */}
       <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#0a0a0c]/50">
+         {messages.length > 0 && (
+           <button
+             onClick={resetConversation}
+             aria-label="Começar uma nova conversa"
+             title="Nova conversa"
+             className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs sm:text-sm font-medium bg-transparent hover:bg-[#27272a] text-zinc-400 hover:text-zinc-200 border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/60"
+           >
+             <RotateCcw size={13} />
+             Nova conversa
+           </button>
+         )}
          {predefinedActions.map((action, idx) => (
            <button
              key={idx}
              onClick={() => handleSend(action.prompt)}
-             disabled={isTyping}
+             disabled={busy}
              className="whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-medium bg-[#18181b]/80 hover:bg-[#27272a] text-zinc-300 border border-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/60"
            >
              {action.label}
@@ -396,13 +460,12 @@ export default function AiChat() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) handleSend(inputValue);
             }}
-            disabled={isTyping}
             placeholder="Pergunte qualquer coisa sobre o Otavio..."
             className="w-full bg-[#18181b]/60 border border-white/10 rounded-full pl-6 pr-12 py-4 text-sm text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-[#8b5cf6]/50 transition-all disabled:opacity-50"
           />
           <button
             onClick={() => handleSend(inputValue)}
-            disabled={isTyping || !inputValue.trim()}
+            disabled={busy || !inputValue.trim()}
             aria-label="Enviar mensagem"
             className="absolute right-2 p-2.5 rounded-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
