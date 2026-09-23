@@ -16,6 +16,12 @@ const TIMEOUT_MS = 60_000;
 // mandaram nem o 1º byte em 45s (fila saturada na NIM).
 // Defina NVIDIA_MODEL no ambiente para trocar sem alterar código.
 const MODEL = process.env.NVIDIA_MODEL ?? "nvidia/nemotron-3-super-120b-a12b";
+// Reserva: o super sofre rajadas de "overloaded" mais longas que todas as
+// tentativas (224 falhas numa sessão de testes; 6 de 40 perguntas sem resposta).
+// O ultra é da mesma família (mesma flag de raciocínio) numa fila separada —
+// mais verboso e um pouco mais propenso a inventar, mas muito melhor que erro.
+const FALLBACK_MODEL = process.env.NVIDIA_FALLBACK_MODEL ?? "nvidia/nemotron-3-ultra-550b-a55b";
+const PRIMARY_ATTEMPTS = 3; // tentativas no principal antes de passar para a reserva
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -82,7 +88,7 @@ const RETRY_DELAYS_MS = [400, 800, 1500, 2500, 4000];
 
 class RetryableNimError extends Error {}
 
-function fetchNim(apiKey: string, messages: ChatMessage[], signal: AbortSignal): Promise<Response> {
+function fetchNim(apiKey: string, messages: ChatMessage[], signal: AbortSignal, model: string): Promise<Response> {
   return fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -91,7 +97,7 @@ function fetchNim(apiKey: string, messages: ChatMessage[], signal: AbortSignal):
     },
     signal,
     body: JSON.stringify({
-      model: MODEL,
+      model,
       messages: [
         { role: "system", content: aiContextFor() },
         ...messages,
@@ -180,7 +186,8 @@ async function openNimStream(
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (attempt > 0 && Date.now() - started > RETRY_BUDGET_MS) break;
     signal.throwIfAborted();
-    const response = await fetchNim(apiKey, messages, signal);
+    const model = attempt < PRIMARY_ATTEMPTS ? MODEL : FALLBACK_MODEL;
+    const response = await fetchNim(apiKey, messages, signal, model);
 
     if (response.status >= 500 || response.status === 429) {
       lastError = `HTTP ${response.status}`;
@@ -200,11 +207,14 @@ async function openNimStream(
     // next() manual: sair de um for-await fecharia o gerador junto.
     const items = readSse(response.body);
     const head = await items.next();
-    if (!head.done && "text" in head.value) return { first: head.value.text, rest: items };
+    if (!head.done && "text" in head.value) {
+      if (model !== MODEL) console.info(`Chat API: respondido pelo modelo reserva (${model}) na tentativa ${attempt + 1}`);
+      return { first: head.value.text, rest: items };
+    }
 
     await items.return(undefined); // cancela o stream que falhou
     lastError = head.done || !("error" in head.value) ? "stream vazio" : head.value.error;
-    console.warn(`Chat API: tentativa ${attempt + 1}/${MAX_ATTEMPTS} falhou (${lastError})`);
+    console.warn(`Chat API: tentativa ${attempt + 1}/${MAX_ATTEMPTS} [${model}] falhou (${lastError})`);
     if (attempt < MAX_ATTEMPTS - 1) await sleep(RETRY_DELAYS_MS[attempt], signal);
   }
   throw new RetryableNimError(lastError);

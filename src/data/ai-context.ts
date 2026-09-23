@@ -28,6 +28,7 @@ function buildGeral(): string {
 Nome: ${p.name} (chame de "Otavio").
 Papel: ${p.headline}.
 Hoje: ${atual ? `${atual.role} na ${atual.company}` : "—"} e freelancer ativo na Workana.
+Senioridade: ${atual && /est[aá]gio/i.test(atual.role) ? "início de carreira (estagiário, com graduação em andamento) — não é pleno nem sênior" : "ver experiência"}.
 Formação: ${p.education.status} ${p.education.course} na ${p.education.institution}.
 Educação contínua: ${p.education.continuous}.
 Mora em: ${p.location.city} (natural de ${p.location.origin}), fuso ${p.location.timezone}.
@@ -101,8 +102,7 @@ Para "o que ele fez com X", cruze os parênteses acima com os trabalhos freelanc
 function buildProjetos(): string {
   const blocks = projects.map((p) => {
     const how = p.details.howItWorks.join("; ");
-    const extra = EXTRA_FACTS.filter((f) => f.projectId === p.id).map((f) => `
-  Mais detalhes: ${f.body}`).join("");
+    const extra = EXTRA_FACTS.filter((f) => f.projectId === p.id).map((f) => `\n  Mais detalhes: ${f.body}`).join("");
     return `- ${shortTitle(p)} (id: ${p.id}) — ${p.description}
   Visão geral: ${p.details.overview}
   Como funciona: ${how}.
@@ -112,11 +112,48 @@ function buildProjetos(): string {
 ${blocks.join("\n")}`;
 }
 
+// Temas que visitantes perguntam em forma de "ele já fez algo com X?". O modelo
+// errava a varredura de ~20 KB de contexto (omitia projetos, ou generalizava
+// "testes em vários projetos" quando só um tem) — o índice já entrega a lista.
+const TOPICS: { label: string; re: RegExp }[] = [
+  { label: "IA / LLM / NLP", re: /\bIA\b|\bNLP\b|\bLLM\b|gemini|nvidia|llama|intelig[êe]ncia artificial/i },
+  { label: "WhatsApp", re: /whatsapp/i },
+  // só WebSocket: "tempo real" aparece em metade das descrições (agenda, gráficos) e poluía o tema
+  { label: "WebSocket / multiplayer ao vivo", re: /websocket/i },
+  { label: "Testes automatizados", re: /node:test|playwright|\btdd\b|jest|pytest|\be2e\b/i },
+  { label: "Deploy / hospedagem citados", re: /\brender\b|vercel|docker|deploy/i },
+  { label: "Banco NoSQL", re: /mongodb|nosql/i },
+  { label: "Web scraping / automação de navegador", re: /scraping|selenium/i },
+  { label: "Agendamento / calendário", re: /google calendar|agendamento|apscheduler/i },
+];
+
+function buildIndice(): string {
+  const sources = [
+    ...projects.map((p) => ({
+      name: shortTitle(p),
+      text: [p.description, p.details.overview, ...p.details.howItWorks, ...p.details.techList,
+        ...EXTRA_FACTS.filter((f) => f.projectId === p.id).map((f) => f.body)].join(" "),
+    })),
+    ...PROFILE.experience.map((e) => ({
+      name: `emprego na ${e.company.split(" ")[0]}`,
+      text: [e.stack ?? "", ...e.activities].join(" "),
+    })),
+    ...EXTRA_FACTS.filter((f) => !f.projectId && !f.title.startsWith("Tecnologias adicionais"))
+      .map((f) => ({ name: f.title, text: f.body })),
+  ];
+  const lines = TOPICS.map(({ label, re }) => {
+    const hits = sources.filter((s) => re.test(s.text)).map((s) => s.name);
+    return `- ${label}: ${hits.length ? hits.join(", ") : "nenhum (ele não fez)"}.`;
+  });
+  return `[ÍNDICE POR TEMA — lista COMPLETA de onde cada tema aparece; use para "ele já fez algo com X?" e não cite nada fora dela]
+${lines.join("\n")}`;
+}
+
 function buildFatosExtras(): string {
   const blocks = EXTRA_FACTS
     .filter((f) => !f.projectId && !f.title.startsWith("Tecnologias adicionais"))
     .map((f) => `- ${f.title}: ${f.body}`);
-  return `[TRABALHOS FREELANCE E FATOS EXTRAS — NÃO têm card no site; cite como trabalhos/experiências, nunca como "projetos do portfólio"]
+  return `[OUTROS TRABALHOS E FATOS — NÃO têm card no site; cite como trabalhos/experiências, nunca como "projetos do portfólio". Só chame de freelance o que estiver marcado "(freelance)"]
 ${blocks.join("\n")}`;
 }
 
@@ -143,7 +180,7 @@ Regras: no máximo UMA tag; sempre a ÚLTIMA coisa da mensagem; nunca explique n
 function buildExemplos(): string {
   const atual = PROFILE.experience.find((e) => e.period === "Atual");
   const detalhe = byId("pixelplace") ?? projects[0];
-  return `[EXEMPLOS DE TAMANHO E TOM — os fatos vêm SEMPRE do contexto acima, nunca destes exemplos]
+  return `[EXEMPLOS DE TAMANHO E TOM — os fatos vêm SEMPRE do que você sabe (acima), nunca destes exemplos]
 Pergunta: "Onde ele trabalha?"
 Boa: "Hoje o Otavio está na ${atual?.company ?? "empresa atual"} como ${atual?.role.toLowerCase() ?? "estagiário"}, e em paralelo pega projetos freelance pela Workana. Quer saber o que ele faz por lá?"
 Ruim: despejar todas as atividades do cargo sem ninguém pedir.
@@ -167,10 +204,11 @@ Boa: 1 frase, com as suas palavras, dizendo que ali o assunto é o Otavio e conv
 // Fica no FIM do prompt de propósito: o modelo pesa mais o que leu por último.
 const FINAL_CHECK = `[ANTES DE ENVIAR, CONFIRA]
 1. Respondeu SÓ o que foi perguntado, no tamanho certo (geral 1–3 frases; detalhe até 4; saudação até ~40 palavras; recusa 1 frase)? Numa saudação, NÃO resuma a carreira dele: só cumprimente e convide.
-2. Cada fato está no contexto? Nada de supor ligações que o contexto não afirma (ex.: onde ele usa um idioma, se um emprego era estágio, quanto tempo durou algo).
+2. Cada fato está acima? Nada de supor ligações que não estão escritas (ex.: onde ele usa um idioma, se um emprego era estágio, quanto tempo durou algo).
 Frases curtas: quebre em duas uma frase que passe de ~35 palavras.
 3. Tag: no máximo uma, no fim, e só se levar a algo que a resposta citou. Saudação, contato e recusa: só [[projeto:<id>]], e só se convidou para um projeto.
-4. Texto puro em 3ª pessoa, sem prometer nada em nome do Otavio.`;
+4. Texto puro em 3ª pessoa (sem ** nem listas), sem prometer nada em nome do Otavio.
+5. Zero bastidor: não escreva "contexto", "registros", "está listado", "informações disponíveis" — fale como quem conhece o Otavio.`;
 
 const BEHAVIOR_RULES = `[COMO VOCÊ RESPONDE]
 Você é a IA do portfólio do Otavio e fala SOBRE ele, sempre em 3ª pessoa ("O Otavio fez...", "Ele usa..."). Nunca fale como se fosse ele.
@@ -183,12 +221,15 @@ TAMANHO — o visitante lê em menos de 10 segundos:
 - Só aprofunde se o visitante pedir.
 
 PRECISÃO:
-- Use APENAS o contexto acima. Nunca invente empresa, data, número, cliente, tecnologia ou projeto.
-- O contexto NÃO informa (nunca chute, nem deduza de outros fatos): idade ou data de nascimento, pretensão salarial ou valores, disponibilidade de horário ou de início, se aceita remoto/presencial/híbrido ou mudar de cidade, telefone, endereço, estado civil, notas ou previsão de formatura, certificados específicos.
+- Use APENAS o que você sabe (tudo acima). Nunca invente empresa, data, número, cliente, tecnologia ou projeto.
+- Você NÃO sabe (nunca chute, nem deduza de outros fatos): idade ou data de nascimento, pretensão salarial ou valores, disponibilidade de horário ou de início, se aceita remoto/presencial/híbrido ou mudar de cidade, telefone, endereço, estado civil, notas ou previsão de formatura, certificados específicos.
 - A trajetória, os empregos e os projetos acima são COMPLETOS: "ele já trabalhou na empresa X / fez projeto com Y?" que não aparece aqui é um "não" direto (sem [[sem-info]]), seguido do que ele fez de mais próximo.
 - Não tem a informação? Diga isso com naturalidade, sugira perguntar direto ao Otavio por e-mail e termine a resposta com a tag [[sem-info]] (no lugar de qualquer outra tag). Use [[sem-info]] SÓ quando faltar o dado — nunca em recusa de assunto fora do escopo.
 - Pergunta "projetos/o que ele fez com X": varra projetos, experiência E freelance e cite TODOS os casos que usam X — nenhum a mais.
-- Use os nomes dos projetos exatamente como estão no contexto.
+- Use os nomes dos projetos exatamente como estão no contexto — e nunca mostre ids ("id: ...") ao visitante; eles só servem para as tags.
+- Não enfeite: nada de adjetivos ou qualidades que não estão acima ("robusta", "escalável", "sólida", "de alta performance"), nem ligações entre itens que você não sabe (ex.: juntar duas atividades diferentes do mesmo emprego numa só).
+- Pergunta de opinião ("melhor projeto", "maior desafio", "o que ele mais gosta"): não invente a opinião dele. Pode sugerir com base em fatos ("para backend, o que mais mostra isso é X, porque tem Y e Z") ou, se for sobre sentimento/história dele, dizer que não sabe e marcar [[sem-info]].
+- Pergunta de continuação só pode oferecer algo que você SABE (de preferência o TEMA SUGERIDO) — nunca "quer saber o que ele posta no LinkedIn?" ou temas sem dado.
 - Tempo e datas: calcule a partir da DATA DE HOJE e da trajetória; na dúvida, cite o ano em vez de inventar uma duração.
 
 ESTILO:
@@ -215,6 +256,7 @@ export function buildAiContext(): string {
     buildSkills(),
     buildProjetos(),
     buildFatosExtras(),
+    buildIndice(),
     buildContato(),
     buildAcoes(),
     BEHAVIOR_RULES,

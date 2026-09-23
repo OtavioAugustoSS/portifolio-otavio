@@ -32,6 +32,18 @@ export const NO_INFO_TAG = "[[sem-info]]";
 const NO_INFO_REGEX = /\s*\[\[\s*sem-info\s*\]\]/gi;
 
 /**
+ * O chat renderiza texto puro. O modelo reserva às vezes escapa um **negrito**
+ * ou `código` apesar da regra — removemos só os marcadores, nunca o conteúdo.
+ */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "");
+}
+
+/**
  * Extrai a primeira tag de ação VÁLIDA do texto e remove TODAS as tags
  * (válidas ou não) da versão exibida. Robusto a drift do modelo:
  * tag malformada/desconhecida → só é removida, sem ação.
@@ -53,7 +65,7 @@ export function parseActionTag(raw: string): { clean: string; action: SiteAction
     return "";
   }).replace(NO_INFO_REGEX, "").trim();
 
-  return { clean, action };
+  return { clean: stripMarkdown(clean), action };
 }
 
 /**
@@ -66,7 +78,9 @@ export function splitVisible(raw: string): string {
   // esconde início de tag não fechada no fim do texto ("[", "[[", "[[proj...",
   // e também "[[sem-info]" — já tem um "]" mas ainda não fechou)
   visible = visible.replace(/\[{1,2}[^\]]*\]?$/, "");
-  return visible.trimEnd();
+  // durante o stream um "**" ainda sem par fica visível até fechar — tolerável;
+  // os pares completos já somem aqui para o texto não "pular" no fim
+  return stripMarkdown(visible).trimEnd();
 }
 
 /** Inverso do parseActionTag: a tag como a IA a escreveu (para o histórico). */

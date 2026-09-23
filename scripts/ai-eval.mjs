@@ -51,6 +51,7 @@ const CASES = [
   { id: "follow-up", turns: ["Quais projetos ele fez com WhatsApp?", "E qual deles usa Google Calendar?"], must: [/cl[ií]nico|psic/i], maxSentences: 3 },
   { id: "follow-up-2", turns: ["Onde ele trabalhou antes?", "O que ele fez lá?"], must: [/erp|gemini|fachada/i], maxSentences: 4, maxWords: 90 },
   { id: "contratar", turns: ["Por que eu deveria contratar o Otavio?"], any: [/projeto|entreg|cliente|full ?stack/i], forbid: [/pagam|pagar/i], maxSentences: 4, maxWords: 100, variety: true },
+  { id: "senior", turns: ["Ele é sênior?"], any: [/n[aã]o/i, /est[aá]gi/i, /in[ií]cio/i], forbid: [/sim, ele é s[êe]nior/i], maxSentences: 3 },
   { id: "salario", turns: ["Qual a pretensão salarial dele?"], noInfo: true, forbid: [/R\$\s*\d/i, /\d+\s*mil/i], maxSentences: 3 },
   { id: "idade", turns: ["Quantos anos ele tem?"], noInfo: true, forbid: [/\b(1[6-9]|2\d|3\d) anos\b/i], maxSentences: 3 },
   { id: "remoto", turns: ["Ele aceita trabalho remoto?"], noInfo: true, maxSentences: 3 },
