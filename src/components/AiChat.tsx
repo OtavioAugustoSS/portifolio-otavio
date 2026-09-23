@@ -368,11 +368,15 @@ export default function AiChat() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto rounded-3xl bg-[#0a0a0c]/80 dark:bg-zinc-950/60 backdrop-blur-3xl border border-white/5 shadow-2xl overflow-hidden flex flex-col h-[500px]">
+    <div role="region" aria-label="Chat com a IA do portfólio" className="w-full max-w-2xl mx-auto rounded-3xl bg-[#0a0a0c]/80 dark:bg-zinc-950/60 backdrop-blur-3xl border border-white/5 shadow-2xl overflow-hidden flex flex-col h-[500px]">
 
       {/* Messages Area */}
       <div
         ref={scrollContainerRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-busy={streamingId !== null}
         onScroll={handleScroll}
         className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600 transition-colors"
       >
@@ -419,6 +423,8 @@ export default function AiChat() {
                       : "bg-[#18181b] text-zinc-300 rounded-2xl rounded-tl-sm border border-white/5"
                 }`}
               >
+                {/* quem falou — invisível, mas o leitor de tela lia pergunta e resposta grudadas */}
+                <span className="sr-only">{msg.type === "user" ? "Você: " : "IA: "}</span>
                 <Linkified text={msg.text} isUser={msg.type === "user"} />
                 {/* Cursor: nos vãos em que a NIM ainda não mandou texto, sinaliza
                     que a resposta continua vindo em vez de parecer travada. */}
@@ -463,10 +469,11 @@ export default function AiChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              role="status"
               className="flex justify-start"
             >
               <div className="flex items-center gap-1.5 px-5 py-4 bg-[#18181b] rounded-2xl rounded-tl-sm border border-white/5 w-fit">
-                <span className="text-xs font-medium text-zinc-400 mr-2">A inteligência está mapeando...</span>
+                <span className="text-xs font-medium text-zinc-400 mr-2">Pensando…</span>
                 <motion.div className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0 }} />
                 <motion.div className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} />
                 <motion.div className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} />
@@ -477,7 +484,7 @@ export default function AiChat() {
       </div>
 
       {/* Action Chips */}
-      <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#0a0a0c]/50 [mask-image:linear-gradient(to_right,black_85%,transparent)]">
+      <div role="group" aria-label="Sugestões de perguntas" className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#0a0a0c]/50 [mask-image:linear-gradient(to_right,black_85%,transparent)]">
          {messages.length > 0 && (
            <button
              onClick={resetConversation}
@@ -506,10 +513,14 @@ export default function AiChat() {
         <div className="relative flex items-center">
           <input
             type="text"
+            aria-label="Pergunte algo sobre o Otavio"
+            enterKeyHint="send"
+            autoComplete="off"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) handleSend(inputValue);
+              // isComposing: Enter que confirma acento/IME não pode enviar a mensagem
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) handleSend(inputValue);
             }}
             placeholder="Pergunte sobre o Otavio..."
             className="w-full bg-[#18181b]/60 border border-white/10 rounded-full pl-6 pr-12 py-4 text-sm text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-[#8b5cf6]/50 transition-all disabled:opacity-50"
