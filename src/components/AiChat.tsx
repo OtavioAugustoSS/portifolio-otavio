@@ -11,6 +11,7 @@ import {
   actionLabel,
   actionTag,
 } from "@/lib/site-actions";
+import { suggestFollowUps } from "@/lib/follow-ups";
 
 const MAX_INPUT_LENGTH = 500;
 
@@ -135,6 +136,17 @@ export default function AiChat() {
     { label: "Projetos", prompt: "Quais projetos o Otavio já desenvolveu?" },
     { label: "Contato", prompt: "Como posso entrar em contato com o Otavio profissionalmente?" }
   ];
+
+  // Depois de uma resposta, os chips viram continuações daquele assunto;
+  // sem conversa, ficam os atalhos fixos. Baseado na última resposta VÁLIDA
+  // (não na última mensagem) para os chips não trocarem enquanto a IA digita.
+  const lastAnswer = [...messages].reverse().find(m => m.type === "ai" && !m.isError && m.text && m.id !== streamingId);
+  const chips = lastAnswer
+    ? suggestFollowUps(
+        lastAnswer.action,
+        messages.filter(m => m.type === "user").map(m => m.text)
+      )
+    : predefinedActions;
 
   const runAction = (action: SiteAction) => {
     if (action.type === "goto") {
@@ -295,6 +307,9 @@ export default function AiChat() {
           setMessages(prev => prev.map(m =>
             m.id === aiId ? { ...m, text: clean, action: action ?? undefined } : m
           ));
+          // O chip de ação entra DEPOIS do texto, na mesma mensagem (o length não
+          // muda) — sem isso ele nascia escondido abaixo da dobra no celular.
+          requestAnimationFrame(() => scrollToBottom());
         }
       } else {
         let serverError = "";
@@ -426,7 +441,7 @@ export default function AiChat() {
       </div>
 
       {/* Action Chips */}
-      <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#0a0a0c]/50">
+      <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-t border-white/5 bg-[#0a0a0c]/50 [mask-image:linear-gradient(to_right,black_85%,transparent)]">
          {messages.length > 0 && (
            <button
              onClick={resetConversation}
@@ -438,9 +453,9 @@ export default function AiChat() {
              Nova conversa
            </button>
          )}
-         {predefinedActions.map((action, idx) => (
+         {chips.map((action) => (
            <button
-             key={idx}
+             key={action.prompt}
              onClick={() => handleSend(action.prompt)}
              disabled={busy}
              className="whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-medium bg-[#18181b]/80 hover:bg-[#27272a] text-zinc-300 border border-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/60"
@@ -460,7 +475,7 @@ export default function AiChat() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) handleSend(inputValue);
             }}
-            placeholder="Pergunte qualquer coisa sobre o Otavio..."
+            placeholder="Pergunte sobre o Otavio..."
             className="w-full bg-[#18181b]/60 border border-white/10 rounded-full pl-6 pr-12 py-4 text-sm text-zinc-200 placeholder-zinc-400 focus:outline-none focus:border-[#8b5cf6]/50 transition-all disabled:opacity-50"
           />
           <button

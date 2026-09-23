@@ -18,6 +18,42 @@ const MODEL = process.env.NVIDIA_MODEL ?? "nvidia/nemotron-3-super-120b-a12b";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+// ─── Limite de requisições por IP ─────────────────────────────────────────────
+// A rota é pública e gasta a NVIDIA_API_KEY. Janela deslizante em memória:
+// cada instância serverless tem a sua, então é proteção contra abuso casual
+// (script martelando), não um limite global exato. Só vale em produção — em
+// dev o scripts/ai-eval.mjs dispara dezenas de perguntas seguidas.
+const RATE_LIMITS = [
+  { windowMs: 60_000, max: 10 },      // conversa normal: bem abaixo disso
+  { windowMs: 3_600_000, max: 80 },
+];
+const hits = new Map<string, number[]>();
+
+function clientIp(request: Request): string {
+  const fwd = request.headers.get("x-forwarded-for");
+  return fwd?.split(",")[0].trim() || request.headers.get("x-real-ip") || "desconhecido";
+}
+
+/** Registra o acesso e devolve em quantos segundos liberar (0 = liberado). */
+function rateLimit(ip: string, now = Date.now()): number {
+  const longest = RATE_LIMITS[RATE_LIMITS.length - 1].windowMs;
+  const list = (hits.get(ip) ?? []).filter((t) => now - t < longest);
+  for (const { windowMs, max } of RATE_LIMITS) {
+    const inWindow = list.filter((t) => now - t < windowMs);
+    if (inWindow.length >= max) {
+      hits.set(ip, list);
+      return Math.ceil((inWindow[0] + windowMs - now) / 1000);
+    }
+  }
+  list.push(now);
+  hits.set(ip, list);
+  // faxina ocasional para o Map não crescer sem fim numa instância quente
+  if (hits.size > 5_000) {
+    for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > longest) hits.delete(k);
+  }
+  return 0;
+}
+
 function isValidMessages(val: unknown): val is ChatMessage[] {
   if (!Array.isArray(val) || val.length > MAX_MESSAGES) return false;
   return val.every(
@@ -174,6 +210,16 @@ function toTextStream(first: string, rest: AsyncGenerator<SseItem>): ReadableStr
 }
 
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production") {
+    const retryAfter = rateLimit(clientIp(request));
+    if (retryAfter > 0) {
+      return NextResponse.json(
+        { error: "Muitas perguntas seguidas. Espere alguns segundos e tente de novo." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+  }
+
   try {
     const body = await request.json();
     const { messages } = body;
